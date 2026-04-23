@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Business.Services;
 using MuebleriaAlpesWebBackend.Data.Repositories;
@@ -15,7 +15,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<OracleConnectionFactory>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IVarianteRepository, VarianteRepository>();
+builder.Services.AddScoped<IContenidoRepository, ContenidoRepository>();
+builder.Services.AddScoped<IPrecioRepository, PrecioRepository>();
+
 builder.Services.AddScoped<ITestService, TestService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IVarianteService, VarianteService>();
+builder.Services.AddScoped<IContenidoService, ContenidoService>();
+builder.Services.AddScoped<IPrecioService, PrecioService>();
 
 builder.Services.AddCors(options =>
 {
@@ -30,6 +39,8 @@ builder.Services.AddCors(options =>
 
 
 var app = builder.Build();
+
+app.UseMiddleware<MuebleriaAlpesWebBackend.API.Middleware.ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
