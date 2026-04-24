@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Business.Services;
 using MuebleriaAlpesWebBackend.Data.Repositories;
@@ -16,6 +16,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<OracleConnectionFactory>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
 builder.Services.AddScoped<ITestService, TestService>();
+builder.Services.AddScoped<IPagoRepository, PagoRepository>();
+builder.Services.AddScoped<IPagoService, PagoService>();
+builder.Services.AddScoped<IFacturacionRepository, FacturacionRepository>();
+builder.Services.AddScoped<IFacturacionService, FacturacionService>();
 
 builder.Services.AddCors(options =>
 {

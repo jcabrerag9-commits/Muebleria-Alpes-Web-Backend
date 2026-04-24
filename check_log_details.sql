@@ -1,0 +1,21 @@
+SET LINESIZE 200;
+SET PAGESIZE 100;
+PROMPT --- Defaults ---
+SELECT column_name, data_default 
+FROM all_tab_columns 
+WHERE table_name = 'ALP_TRANSACCION_LOG' 
+AND column_name IN ('TRL_TRANSACCION_LOG', 'TRL_FECHA_CREACION');
+
+PROMPT --- Triggers ---
+SELECT trigger_name, status 
+FROM all_triggers 
+WHERE table_name = 'ALP_TRANSACCION_LOG';
+
+PROMPT --- Last Logs ---
+SELECT * FROM (
+    SELECT TRL_TRANSACCION_LOG, USU_USUARIO, TRL_ENTIDAD, TRL_FECHA_CREACION 
+    FROM ALP_TRANSACCION_LOG 
+    ORDER BY TRL_FECHA_CREACION DESC
+) WHERE ROWNUM <= 5;
+
+EXIT;
