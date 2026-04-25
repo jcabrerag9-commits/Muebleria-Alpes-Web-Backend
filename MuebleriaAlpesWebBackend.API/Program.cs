@@ -19,12 +19,14 @@ builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IVarianteRepository, VarianteRepository>();
 builder.Services.AddScoped<IContenidoRepository, ContenidoRepository>();
 builder.Services.AddScoped<IPrecioRepository, PrecioRepository>();
+builder.Services.AddScoped<IUbicacionRepository, UbicacionRepository>();
 
 builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IVarianteService, VarianteService>();
 builder.Services.AddScoped<IContenidoService, ContenidoService>();
 builder.Services.AddScoped<IPrecioService, PrecioService>();
+builder.Services.AddScoped<IUbicacionService, UbicacionService>();
 
 builder.Services.AddCors(options =>
 {
