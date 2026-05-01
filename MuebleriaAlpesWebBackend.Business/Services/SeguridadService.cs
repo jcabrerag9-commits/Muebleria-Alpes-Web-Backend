@@ -97,5 +97,35 @@ namespace MuebleriaAlpesWebBackend.Business.Services
         {
             return await _seguridadRepository.RegistrarBitacoraAccesoAsync(request);
         }
+
+        public async Task<List<UsuarioConsultaResponse>> ListarUsuariosAsync(string? estado)
+        {
+            return await _seguridadRepository.ListarUsuariosAsync(estado);
+        }
+
+        public async Task<UsuarioConsultaResponse?> ObtenerUsuarioAsync(int usuarioId)
+        {
+            return await _seguridadRepository.ObtenerUsuarioAsync(usuarioId);
+        }
+
+        public async Task<List<RolConsultaResponse>> ListarRolesAsync(string? estado)
+        {
+            return await _seguridadRepository.ListarRolesAsync(estado);
+        }
+
+        public async Task<RolConsultaResponse?> ObtenerRolAsync(int rolId)
+        {
+            return await _seguridadRepository.ObtenerRolAsync(rolId);
+        }
+
+        public async Task<List<PermisoConsultaResponse>> ListarPermisosAsync(string? estado)
+        {
+            return await _seguridadRepository.ListarPermisosAsync(estado);
+        }
+
+        public async Task<PermisoConsultaResponse?> ObtenerPermisoAsync(int permisoId)
+        {
+            return await _seguridadRepository.ObtenerPermisoAsync(permisoId);
+        }
     }
 }

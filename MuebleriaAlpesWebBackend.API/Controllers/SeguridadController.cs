@@ -15,6 +15,105 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             _seguridadService = seguridadService;
         }
 
+        [HttpGet("usuarios")]
+        public async Task<IActionResult> ListarUsuarios([FromQuery] string? estado = null)
+        {
+            try
+            {
+                var response = await _seguridadService.ListarUsuariosAsync(estado);
+                return Ok(new { success = true, message = "Usuarios obtenidos correctamente.", data = response });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("usuarios/{usuarioId:int}")]
+        public async Task<IActionResult> ObtenerUsuario(int usuarioId)
+        {
+            try
+            {
+                var response = await _seguridadService.ObtenerUsuarioAsync(usuarioId);
+                if (response == null)
+                {
+                    return NotFound(new { success = false, message = "Usuario no encontrado." });
+                }
+
+                return Ok(new { success = true, message = "Usuario obtenido correctamente.", data = response });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("roles")]
+        public async Task<IActionResult> ListarRoles([FromQuery] string? estado = null)
+        {
+            try
+            {
+                var response = await _seguridadService.ListarRolesAsync(estado);
+                return Ok(new { success = true, message = "Roles obtenidos correctamente.", data = response });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("roles/{rolId:int}")]
+        public async Task<IActionResult> ObtenerRol(int rolId)
+        {
+            try
+            {
+                var response = await _seguridadService.ObtenerRolAsync(rolId);
+                if (response == null)
+                {
+                    return NotFound(new { success = false, message = "Rol no encontrado." });
+                }
+
+                return Ok(new { success = true, message = "Rol obtenido correctamente.", data = response });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("permisos")]
+        public async Task<IActionResult> ListarPermisos([FromQuery] string? estado = null)
+        {
+            try
+            {
+                var response = await _seguridadService.ListarPermisosAsync(estado);
+                return Ok(new { success = true, message = "Permisos obtenidos correctamente.", data = response });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("permisos/{permisoId:int}")]
+        public async Task<IActionResult> ObtenerPermiso(int permisoId)
+        {
+            try
+            {
+                var response = await _seguridadService.ObtenerPermisoAsync(permisoId);
+                if (response == null)
+                {
+                    return NotFound(new { success = false, message = "Permiso no encontrado." });
+                }
+
+                return Ok(new { success = true, message = "Permiso obtenido correctamente.", data = response });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
         [HttpPost("usuarios")]
         public async Task<IActionResult> CrearUsuario([FromBody] CrearUsuarioRequest request)
         {

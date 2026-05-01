@@ -15,6 +15,123 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             _connectionFactory = connectionFactory;
         }
 
+        public async Task<List<UsuarioConsultaResponse>> ListarUsuariosAsync(string? estado = null)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_LISTAR_USUARIOS");
+            command.Parameters.Add("p_estado", OracleDbType.Varchar2).Value = ValorDb(estado);
+            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            var usuarios = new List<UsuarioConsultaResponse>();
+            while (await reader.ReadAsync())
+            {
+                usuarios.Add(MapUsuario(reader));
+            }
+
+            return usuarios;
+        }
+
+        public async Task<UsuarioConsultaResponse?> ObtenerUsuarioAsync(int usuarioId)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_OBTENER_USUARIO");
+            command.Parameters.Add("p_usu_usuario", OracleDbType.Int32).Value = usuarioId;
+            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return MapUsuario(reader);
+            }
+
+            return null;
+        }
+
+        public async Task<List<RolConsultaResponse>> ListarRolesAsync(string? estado = null)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_LISTAR_ROLES");
+            command.Parameters.Add("p_estado", OracleDbType.Varchar2).Value = ValorDb(estado);
+            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            var roles = new List<RolConsultaResponse>();
+            while (await reader.ReadAsync())
+            {
+                roles.Add(MapRol(reader));
+            }
+
+            return roles;
+        }
+
+        public async Task<RolConsultaResponse?> ObtenerRolAsync(int rolId)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_OBTENER_ROL");
+            command.Parameters.Add("p_rol_rol", OracleDbType.Int32).Value = rolId;
+            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return MapRol(reader);
+            }
+
+            return null;
+        }
+
+        public async Task<List<PermisoConsultaResponse>> ListarPermisosAsync(string? estado = null)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_LISTAR_PERMISOS");
+            command.Parameters.Add("p_estado", OracleDbType.Varchar2).Value = ValorDb(estado);
+            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            var permisos = new List<PermisoConsultaResponse>();
+            while (await reader.ReadAsync())
+            {
+                permisos.Add(MapPermiso(reader));
+            }
+
+            return permisos;
+        }
+
+        public async Task<PermisoConsultaResponse?> ObtenerPermisoAsync(int permisoId)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_OBTENER_PERMISO");
+            command.Parameters.Add("p_per_permiso", OracleDbType.Int32).Value = permisoId;
+            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return MapPermiso(reader);
+            }
+
+            return null;
+        }
+
         public async Task<CrearUsuarioResponse> CrearUsuarioAsync(CrearUsuarioRequest request)
         {
             using var connection = (OracleConnection)_connectionFactory.CreateConnection();
@@ -119,7 +236,6 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
             using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_CREAR_ROL");
 
-            command.Parameters.Add("p_rol_codigo", OracleDbType.Varchar2).Value = request.Codigo;
             command.Parameters.Add("p_rol_nombre", OracleDbType.Varchar2).Value = request.Nombre;
             command.Parameters.Add("p_rol_descripcion", OracleDbType.Varchar2).Value = ValorDb(request.Descripcion);
             command.Parameters.Add("p_rol_estado", OracleDbType.Varchar2).Value = request.Estado;
@@ -146,7 +262,6 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_ACTUALIZAR_ROL");
 
             command.Parameters.Add("p_rol_rol", OracleDbType.Int32).Value = request.RolId;
-            command.Parameters.Add("p_rol_codigo", OracleDbType.Varchar2).Value = request.Codigo;
             command.Parameters.Add("p_rol_nombre", OracleDbType.Varchar2).Value = request.Nombre;
             command.Parameters.Add("p_rol_descripcion", OracleDbType.Varchar2).Value = ValorDb(request.Descripcion);
             command.Parameters.Add("p_rol_estado", OracleDbType.Varchar2).Value = request.Estado;
@@ -174,7 +289,6 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
             using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_CREAR_PERMISO");
 
-            command.Parameters.Add("p_per_codigo", OracleDbType.Varchar2).Value = request.Codigo;
             command.Parameters.Add("p_per_nombre", OracleDbType.Varchar2).Value = request.Nombre;
             command.Parameters.Add("p_per_descripcion", OracleDbType.Varchar2).Value = ValorDb(request.Descripcion);
             command.Parameters.Add("p_per_estado", OracleDbType.Varchar2).Value = request.Estado;
@@ -201,7 +315,6 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             using var command = CrearComando(connection, "PKG_SEGURIDAD.SP_ACTUALIZAR_PERMISO");
 
             command.Parameters.Add("p_per_permiso", OracleDbType.Int32).Value = request.PermisoId;
-            command.Parameters.Add("p_per_codigo", OracleDbType.Varchar2).Value = request.Codigo;
             command.Parameters.Add("p_per_nombre", OracleDbType.Varchar2).Value = request.Nombre;
             command.Parameters.Add("p_per_descripcion", OracleDbType.Varchar2).Value = ValorDb(request.Descripcion);
             command.Parameters.Add("p_per_estado", OracleDbType.Varchar2).Value = request.Estado;
@@ -324,6 +437,49 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 BitacoraAccesoId = Convert.ToInt32(bitacoraOut.Value.ToString())
             };
+        }
+
+        private static UsuarioConsultaResponse MapUsuario(IDataRecord record)
+        {
+            return new UsuarioConsultaResponse
+            {
+                UsuarioId = Convert.ToInt32(record["USU_USUARIO"]),
+                Codigo = ValorString(record["USU_CODIGO"]),
+                Username = ValorString(record["USU_USERNAME"]) ?? string.Empty,
+                Estado = ValorString(record["USU_ESTADO"]) ?? string.Empty,
+                FechaCreacion = Convert.ToDateTime(record["USU_FECHA_CREACION"])
+            };
+        }
+
+        private static RolConsultaResponse MapRol(IDataRecord record)
+        {
+            return new RolConsultaResponse
+            {
+                RolId = Convert.ToInt32(record["ROL_ROL"]),
+                Codigo = ValorString(record["ROL_CODIGO"]),
+                Nombre = ValorString(record["ROL_NOMBRE"]) ?? string.Empty,
+                Descripcion = ValorString(record["ROL_DESCRIPCION"]),
+                Estado = ValorString(record["ROL_ESTADO"]) ?? string.Empty,
+                FechaCreacion = Convert.ToDateTime(record["ROL_FECHA_CREACION"])
+            };
+        }
+
+        private static PermisoConsultaResponse MapPermiso(IDataRecord record)
+        {
+            return new PermisoConsultaResponse
+            {
+                PermisoId = Convert.ToInt32(record["PER_PERMISO"]),
+                Codigo = ValorString(record["PER_CODIGO"]),
+                Nombre = ValorString(record["PER_NOMBRE"]) ?? string.Empty,
+                Descripcion = ValorString(record["PER_DESCRIPCION"]),
+                Estado = ValorString(record["PER_ESTADO"]) ?? string.Empty,
+                FechaCreacion = Convert.ToDateTime(record["PER_FECHA_CREACION"])
+            };
+        }
+
+        private static string? ValorString(object value)
+        {
+            return value == DBNull.Value ? null : value?.ToString();
         }
 
         private static OracleCommand CrearComando(OracleConnection connection, string procedureName)
