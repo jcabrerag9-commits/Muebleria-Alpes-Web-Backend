@@ -15,7 +15,11 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             _service = service;
         }
 
-        // GET /api/devoluciones/categorias
+        // ════════════════════════════════════════════════════════════════════
+        // CATEGORÍAS — CRUD COMPLETO
+        // ════════════════════════════════════════════════════════════════════
+
+        // GET /api/devoluciones/categorias?estado=ACTIVO
         [HttpGet("categorias")]
         public async Task<IActionResult> GetCategorias([FromQuery] string? estado)
         {
@@ -33,6 +37,73 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
 
             return Ok(new { success = true, data = resultado });
         }
+
+        // POST /api/devoluciones/categorias
+        [HttpPost("categorias")]
+        public async Task<IActionResult> CreateCategoria([FromBody] CategoriaDevolucionCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errores = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                return BadRequest(new { success = false, message = "Datos inválidos.", errors = errores });
+            }
+
+            try
+            {
+                var creada = await _service.CreateCategoriaAsync(dto);
+                return StatusCode(201, new { success = true, message = "Categoría creada exitosamente.", data = creada });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { success = false, message = ex.Message });
+            }
+        }
+
+        // PUT /api/devoluciones/categorias/{id}
+        [HttpPut("categorias/{id:long}")]
+        public async Task<IActionResult> UpdateCategoria(long id, [FromBody] CategoriaDevolucionUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errores = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                return BadRequest(new { success = false, message = "Datos inválidos.", errors = errores });
+            }
+
+            try
+            {
+                var actualizada = await _service.UpdateCategoriaAsync(id, dto);
+                if (actualizada is null)
+                    return NotFound(new { success = false, message = $"Categoría ID {id} no encontrada." });
+
+                return Ok(new { success = true, message = "Categoría actualizada.", data = actualizada });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // DELETE /api/devoluciones/categorias/{id}
+        [HttpDelete("categorias/{id:long}")]
+        public async Task<IActionResult> DeleteCategoria(long id)
+        {
+            try
+            {
+                var eliminada = await _service.DeleteCategoriaAsync(id);
+                if (!eliminada)
+                    return NotFound(new { success = false, message = $"Categoría ID {id} no encontrada." });
+
+                return Ok(new { success = true, message = "Categoría eliminada exitosamente." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // DEVOLUCIONES
+        // ════════════════════════════════════════════════════════════════════
 
         // GET /api/devoluciones?estado=SOLICITADA&clienteId=1
         [HttpGet]

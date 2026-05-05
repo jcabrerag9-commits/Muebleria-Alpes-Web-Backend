@@ -54,12 +54,10 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             ValidarFechas(dto.PrmFechaInicio, dto.PrmFechaFin);
             ValidarValor(dto.PrmTipo, dto.PrmValor);
 
-            if (await _repo.CodigoExistsAsync(dto.PrmCodigo))
-                throw new InvalidOperationException($"Ya existe una promoción con el código '{dto.PrmCodigo}'.");
-
+            // PrmCodigo se deja vacío — el trigger TRG_PROMO_CODIGO lo genera en Oracle
             var entity = new Promocion
             {
-                PrmCodigo      = dto.PrmCodigo.ToUpper().Trim(),
+                PrmCodigo      = string.Empty,
                 PrmNombre      = dto.PrmNombre.Trim(),
                 PrmDescripcion = dto.PrmDescripcion?.Trim(),
                 PrmTipo        = dto.PrmTipo.ToUpper(),
@@ -71,7 +69,6 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
             var newId = await _repo.CreateAsync(entity);
 
-            // Agregar productos si vienen
             if (dto.Productos is { Count: > 0 })
             {
                 foreach (var prod in dto.Productos)

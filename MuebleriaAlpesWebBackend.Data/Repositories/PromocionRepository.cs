@@ -101,11 +101,12 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
         public async Task<long> CreateAsync(Promocion p)
         {
+            // PRM_CODIGO se omite del INSERT — el trigger TRG_PROMO_CODIGO lo genera automáticamente
             var sql = @"INSERT INTO ALP_PROMOCION
-                            (PRM_CODIGO, PRM_NOMBRE, PRM_DESCRIPCION, PRM_TIPO,
+                            (PRM_NOMBRE, PRM_DESCRIPCION, PRM_TIPO,
                              PRM_VALOR, PRM_FECHA_INICIO, PRM_FECHA_FIN, PRM_ESTADO)
                         VALUES
-                            (:PrmCodigo, :PrmNombre, :PrmDescripcion, :PrmTipo,
+                            (:PrmNombre, :PrmDescripcion, :PrmTipo,
                              :PrmValor, :PrmFechaInicio, :PrmFechaFin, :PrmEstado)
                         RETURNING PRM_PROMOCION INTO :newId";
 
@@ -113,7 +114,6 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             conn.Open();
 
             var parametros = new DynamicParameters();
-            parametros.Add("PrmCodigo",      p.PrmCodigo);
             parametros.Add("PrmNombre",      p.PrmNombre);
             parametros.Add("PrmDescripcion", p.PrmDescripcion);
             parametros.Add("PrmTipo",        p.PrmTipo);
@@ -130,6 +130,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
         public async Task<bool> UpdateAsync(Promocion p)
         {
+            // PRM_CODIGO nunca se actualiza — es generado y fijo
             var sql = @"UPDATE ALP_PROMOCION
                         SET PRM_NOMBRE       = :PrmNombre,
                             PRM_DESCRIPCION  = :PrmDescripcion,
@@ -148,16 +149,14 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             var sql = "DELETE FROM ALP_PROMOCION WHERE PRM_PROMOCION = :id";
             using var conn = _connectionFactory.CreateConnection();
-            var rows = await conn.ExecuteAsync(sql, new { id });
-            return rows > 0;
+            return await conn.ExecuteAsync(sql, new { id }) > 0;
         }
 
         public async Task<bool> ExistsAsync(long id)
         {
             var sql = "SELECT COUNT(1) FROM ALP_PROMOCION WHERE PRM_PROMOCION = :id";
             using var conn = _connectionFactory.CreateConnection();
-            var count = await conn.ExecuteScalarAsync<int>(sql, new { id });
-            return count > 0;
+            return await conn.ExecuteScalarAsync<int>(sql, new { id }) > 0;
         }
 
         public async Task<bool> CodigoExistsAsync(string codigo, long? excludeId = null)
@@ -166,8 +165,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                         WHERE PRM_CODIGO = :codigo
                           AND (:excludeId IS NULL OR PRM_PROMOCION <> :excludeId)";
             using var conn = _connectionFactory.CreateConnection();
-            var count = await conn.ExecuteScalarAsync<int>(sql, new { codigo = codigo.ToUpper(), excludeId });
-            return count > 0;
+            return await conn.ExecuteScalarAsync<int>(sql, new { codigo = codigo.ToUpper(), excludeId }) > 0;
         }
 
         // ── PromocionProducto ─────────────────────────────────────────────────
@@ -191,33 +189,34 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         public async Task<long> AddProductoAsync(PromocionProducto pp)
         {
             var sql = @"INSERT INTO ALP_PROMOCION_PRODUCTO
-                            (PRM_PROMOCION, PRO_PRODUCTO, PVA_PRODUCTO_VARIANTE, PPO_ESTADO, PPO_FECHA_CREACION)
+                            (PRM_PROMOCION, PRO_PRODUCTO, PVA_PRODUCTO_VARIANTE,
+                             PPO_ESTADO, PPO_FECHA_CREACION)
                         VALUES
-                            (:PrmPromocion, :ProProducto, :PvaProductoVariante, :PpoEstado, :PpoFechaCreacion)
+                            (:PrmPromocion, :ProProducto, :PvaProductoVariante,
+                             :PpoEstado, :PpoFechaCreacion)
                         RETURNING PPO_PROMOCION_PRODUCTO INTO :newId";
 
             using var conn = _connectionFactory.CreateConnection();
             conn.Open();
 
-            var parametros = new DynamicParameters();
-            parametros.Add("PrmPromocion",        pp.PrmPromocion);
-            parametros.Add("ProProducto",         pp.ProProducto);
-            parametros.Add("PvaProductoVariante", pp.PvaProductoVariante);
-            parametros.Add("PpoEstado",           pp.PpoEstado);
-            parametros.Add("PpoFechaCreacion",    pp.PpoFechaCreacion);
-            parametros.Add("newId",               dbType: System.Data.DbType.Int64,
-                           direction: System.Data.ParameterDirection.Output);
+            var p = new DynamicParameters();
+            p.Add("PrmPromocion",        pp.PrmPromocion);
+            p.Add("ProProducto",         pp.ProProducto);
+            p.Add("PvaProductoVariante", pp.PvaProductoVariante);
+            p.Add("PpoEstado",           pp.PpoEstado);
+            p.Add("PpoFechaCreacion",    pp.PpoFechaCreacion);
+            p.Add("newId",               dbType: System.Data.DbType.Int64,
+                  direction: System.Data.ParameterDirection.Output);
 
-            await conn.ExecuteAsync(sql, parametros);
-            return parametros.Get<long>("newId");
+            await conn.ExecuteAsync(sql, p);
+            return p.Get<long>("newId");
         }
 
         public async Task<bool> RemoveProductoAsync(long ppoId)
         {
             var sql = "DELETE FROM ALP_PROMOCION_PRODUCTO WHERE PPO_PROMOCION_PRODUCTO = :ppoId";
             using var conn = _connectionFactory.CreateConnection();
-            var rows = await conn.ExecuteAsync(sql, new { ppoId });
-            return rows > 0;
+            return await conn.ExecuteAsync(sql, new { ppoId }) > 0;
         }
     }
 }

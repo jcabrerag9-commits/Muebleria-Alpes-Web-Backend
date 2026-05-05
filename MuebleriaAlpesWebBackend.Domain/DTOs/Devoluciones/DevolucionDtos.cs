@@ -2,14 +2,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MuebleriaAlpesWebBackend.Domain.DTOs.Devoluciones
 {
-    // ── Constantes de dominio ────────────────────────────────────────────────
+    // ── Constantes de dominio ─────────────────────────────────────────────────
     public static class EstadoDevolucion
     {
-        public const string Solicitada  = "SOLICITADA";
-        public const string EnRevision  = "EN_REVISION";
-        public const string Aprobada    = "APROBADA";
-        public const string Rechazada   = "RECHAZADA";
-        public const string Completada  = "COMPLETADA";
+        public const string Solicitada = "SOLICITADA";
+        public const string EnRevision = "EN_REVISION";
+        public const string Aprobada   = "APROBADA";
+        public const string Rechazada  = "RECHAZADA";
+        public const string Completada = "COMPLETADA";
     }
 
     public static class EstadoDetalleDevolucion
@@ -20,7 +20,48 @@ namespace MuebleriaAlpesWebBackend.Domain.DTOs.Devoluciones
         public const string Reintegrado   = "REINTEGRADO";
     }
 
-    // ── DTO Crear devolución ─────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════════════
+    // DTOs — CATEGORÍA TIPO DEVOLUCIÓN
+    // ════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// CtdCodigo se genera automáticamente en Oracle con el trigger TRG_CTD_CODIGO.
+    /// Formato: DEV-0001, DEV-0002, etc.
+    /// </summary>
+    public class CategoriaDevolucionCreateDto
+    {
+        [Required(ErrorMessage = "El nombre es requerido.")]
+        [MaxLength(150, ErrorMessage = "El nombre no puede exceder 150 caracteres.")]
+        public string CtdNombre { get; set; } = string.Empty;
+
+        [MaxLength(500)]
+        public string? CtdDescripcion { get; set; }
+    }
+
+    public class CategoriaDevolucionUpdateDto
+    {
+        [MaxLength(150)]
+        public string? CtdNombre { get; set; }
+
+        [MaxLength(500)]
+        public string? CtdDescripcion { get; set; }
+
+        public string? CtdEstado { get; set; }
+    }
+
+    public class CategoriaDevolucionResponseDto
+    {
+        public long CtdCategoriaTipoDev { get; set; }
+        public string CtdCodigo { get; set; } = string.Empty;
+        public string CtdNombre { get; set; } = string.Empty;
+        public string? CtdDescripcion { get; set; }
+        public string CtdEstado { get; set; } = string.Empty;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // DTOs — DEVOLUCIÓN
+    // ════════════════════════════════════════════════════════════════════════
+
     public class DevolucionCreateDto
     {
         [Required(ErrorMessage = "La orden de venta es requerida.")]
@@ -41,14 +82,12 @@ namespace MuebleriaAlpesWebBackend.Domain.DTOs.Devoluciones
         public List<DevolucionDetalleCreateDto> Detalles { get; set; } = [];
     }
 
-    // ── DTO Cambiar estado ───────────────────────────────────────────────────
     public class DevolucionUpdateEstadoDto
     {
         [Required(ErrorMessage = "El nuevo estado es requerido.")]
         public string DevEstado { get; set; } = string.Empty;
     }
 
-    // ── DTO Respuesta completa ───────────────────────────────────────────────
     public class DevolucionResponseDto
     {
         public long DevDevolucion { get; set; }
@@ -64,7 +103,6 @@ namespace MuebleriaAlpesWebBackend.Domain.DTOs.Devoluciones
         public List<DevolucionDetalleResponseDto> Detalles { get; set; } = [];
     }
 
-    // ── DTO Listado resumido ─────────────────────────────────────────────────
     public class DevolucionListDto
     {
         public long DevDevolucion { get; set; }
@@ -77,17 +115,10 @@ namespace MuebleriaAlpesWebBackend.Domain.DTOs.Devoluciones
         public string? NombreCategoria { get; set; }
     }
 
-    // ── DTOs Categoría ───────────────────────────────────────────────────────
-    public class CategoriaDevolucionResponseDto
-    {
-        public long CtdCategoriaTipoDev { get; set; }
-        public string CtdCodigo { get; set; } = string.Empty;
-        public string CtdNombre { get; set; } = string.Empty;
-        public string? CtdDescripcion { get; set; }
-        public string CtdEstado { get; set; } = string.Empty;
-    }
+    // ════════════════════════════════════════════════════════════════════════
+    // DTOs — DETALLE DEVOLUCIÓN
+    // ════════════════════════════════════════════════════════════════════════
 
-    // ── DTOs Detalle ─────────────────────────────────────────────────────────
     public class DevolucionDetalleCreateDto
     {
         [Required(ErrorMessage = "El detalle de orden original es requerido.")]

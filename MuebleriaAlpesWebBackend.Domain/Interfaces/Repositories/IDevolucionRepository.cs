@@ -4,7 +4,18 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories
 {
     public interface IDevolucionRepository
     {
-        // Devoluciones
+        // ── Categorías — CRUD completo ────────────────────────────────────────
+        Task<IEnumerable<CategoriaDevolucion>> GetCategoriasAsync(string? estado = null);
+        Task<CategoriaDevolucion?> GetCategoriaByIdAsync(long id);
+        Task<CategoriaDevolucion?> GetCategoriaByCodigoAsync(string codigo);
+        Task<long> CreateCategoriaAsync(CategoriaDevolucion categoria);
+        Task<bool> UpdateCategoriaAsync(CategoriaDevolucion categoria);
+        Task<bool> DeleteCategoriaAsync(long id);
+        Task<bool> CategoriaExistsAsync(long id);
+        Task<bool> CodigoCategoriaExistsAsync(string codigo, long? excludeId = null);
+        Task<bool> CategoriaEnUsoAsync(long id);
+
+        // ── Devoluciones ──────────────────────────────────────────────────────
         Task<IEnumerable<Devolucion>> GetAllAsync(string? estado = null, long? clienteId = null);
         Task<Devolucion?> GetByIdAsync(long id);
         Task<Devolucion?> GetByRmaAsync(string numeroRma);
@@ -16,12 +27,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories
         Task<bool> ExistsAsync(long id);
         Task<string> GenerarNumeroRmaAsync();
 
-        // Detalles
+        // ── Detalles ──────────────────────────────────────────────────────────
         Task<IEnumerable<DevolucionDetalle>> GetDetallesByDevolucionAsync(long devolucionId);
         Task AddDetallesAsync(IEnumerable<DevolucionDetalle> detalles);
-
-        // Categorías
-        Task<IEnumerable<CategoriaDevolucion>> GetCategoriasAsync(string? estado = null);
-        Task<CategoriaDevolucion?> GetCategoriaByIdAsync(long id);
     }
 }
