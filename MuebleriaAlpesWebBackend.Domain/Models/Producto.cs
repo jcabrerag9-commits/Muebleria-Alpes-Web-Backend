@@ -9,9 +9,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         [Required(ErrorMessage = "El tipo de mueble es obligatorio")]
         public int TipoMueble { get; set; }
 
-        [Required(ErrorMessage = "El SKU es obligatorio")]
         [StringLength(50, ErrorMessage = "El SKU no puede exceder los 50 caracteres")]
-        public string Sku { get; set; }
+        public string? Sku { get; set; }
 
         [Required(ErrorMessage = "El nombre es obligatorio")]
         [StringLength(255, ErrorMessage = "El nombre no puede exceder los 255 caracteres")]
@@ -46,8 +45,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         [Range(0.01, 1000)]
         public decimal Largo { get; set; }
 
-        [StringLength(10)]
-        public string Unidad { get; set; } = "cm";
+        [Required]
+        public int UnidadId { get; set; }
     }
 
     public class ResenaProducto

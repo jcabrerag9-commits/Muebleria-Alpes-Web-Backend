@@ -20,7 +20,6 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
         public async Task<int> CreatePaisAsync(Pais pais)
         {
-            if (string.IsNullOrWhiteSpace(pais.Codigo)) throw new ArgumentException("El código de país es obligatorio.");
             if (string.IsNullOrWhiteSpace(pais.Nombre)) throw new ArgumentException("El nombre del país es obligatorio.");
             
             return await _ubicacionRepository.CrearPaisAsync(pais);
@@ -46,7 +45,7 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
         public async Task<int> CreateIdiomaAsync(Idioma idioma)
         {
-            if (string.IsNullOrWhiteSpace(idioma.Codigo)) throw new ArgumentException("El código de idioma es obligatorio.");
+            if (string.IsNullOrWhiteSpace(idioma.Nombre)) throw new ArgumentException("El nombre del idioma es obligatorio.");
             return await _ubicacionRepository.CrearIdiomaAsync(idioma);
         }
 

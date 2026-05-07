@@ -16,7 +16,7 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             _clienteRepository = clienteRepository;
         }
 
-        public async Task<int> RegistrarClienteAsync(Cliente cliente, ClienteEmail emailInicial, ClienteTelefono telInicial)
+        public async Task<int> RegistrarClienteAsync(Cliente cliente)
         {
             // Validaciones Senior
             if (string.IsNullOrWhiteSpace(cliente.NumeroDocumento))
@@ -26,22 +26,6 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             var (id, codigo) = await _clienteRepository.CrearClienteAsync(cliente);
             cliente.Id = id;
             cliente.Codigo = codigo;
-
-            // 2. Agregar Email inicial
-            if (emailInicial != null)
-            {
-                emailInicial.ClienteId = id;
-                emailInicial.EsPrincipal = "S";
-                await _clienteRepository.AgregarEmailAsync(emailInicial);
-            }
-
-            // 3. Agregar Teléfono inicial
-            if (telInicial != null)
-            {
-                telInicial.ClienteId = id;
-                telInicial.EsPrincipal = "S";
-                await _clienteRepository.AgregarTelefonoAsync(telInicial);
-            }
 
             // 4. Crear Preferencias por defecto
             await _clienteRepository.GuardarPreferenciasAsync(new ClientePreferencia { ClienteId = id });
@@ -59,9 +43,9 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             return await _clienteRepository.ListarAsync();
         }
 
-        public async Task<int> AddEmailAsync(ClienteEmail email) => await _clienteRepository.AgregarEmailAsync(email);
-        public async Task<int> AddTelefonoAsync(ClienteTelefono telefono) => await _clienteRepository.AgregarTelefonoAsync(telefono);
-        public async Task<int> AddDireccionAsync(ClienteDireccion direccion) => await _clienteRepository.AgregarDireccionAsync(direccion);
+        public async Task AddEmailAsync(ClienteEmail email) => await _clienteRepository.AgregarEmailAsync(email);
+        public async Task AddTelefonoAsync(ClienteTelefono telefono) => await _clienteRepository.AgregarTelefonoAsync(telefono);
+        public async Task AddDireccionAsync(ClienteDireccion direccion) => await _clienteRepository.AgregarDireccionAsync(direccion);
         public async Task UpdatePreferenciasAsync(ClientePreferencia pref) => await _clienteRepository.GuardarPreferenciasAsync(pref);
 
         public async Task ChangeStatusAsync(int clienteId, string nuevoEstado, string motivo, int? usuarioId)

@@ -8,7 +8,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
     {
         Task<IEnumerable<Producto>> GetAllAsync();
         Task<Producto> GetByIdAsync(int id);
-        Task<int> CreateAsync(Producto producto);
+        Task CreateAsync(Producto producto);
         Task UpdateAsync(Producto producto);
         Task ChangeStatusAsync(int id, string estado);
         Task DeleteLogicoAsync(int id);

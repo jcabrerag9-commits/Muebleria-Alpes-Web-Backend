@@ -14,7 +14,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         [Required]
         public int TipoDocumentoId { get; set; }
         
-        public string Codigo { get; set; } // Generado por DB
+        public string? Codigo { get; set; } // Generado por DB
         
         [Required, StringLength(50)]
         public string NumeroDocumento { get; set; }
@@ -43,6 +43,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
 
     public class ClienteEmail
     {
+        [System.Text.Json.Serialization.JsonIgnore]
         public int Id { get; set; }
         public int ClienteId { get; set; }
         
@@ -55,6 +56,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
 
     public class ClienteTelefono
     {
+        [System.Text.Json.Serialization.JsonIgnore]
         public int Id { get; set; }
         public int ClienteId { get; set; }
         
@@ -70,6 +72,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
 
     public class ClienteDireccion
     {
+        [System.Text.Json.Serialization.JsonIgnore]
         public int Id { get; set; }
         public int ClienteId { get; set; }
         public int PaisId { get; set; }

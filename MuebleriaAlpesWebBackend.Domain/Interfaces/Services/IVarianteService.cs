@@ -7,7 +7,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
     public interface IVarianteService
     {
         Task<IEnumerable<ProductoVariante>> GetByProductoIdAsync(int productoId);
-        Task<int> CreateAsync(ProductoVariante variante);
+        Task CreateAsync(ProductoVariante variante);
         Task UpdateAsync(ProductoVariante variante);
         Task ChangeStatusAsync(int id, string estado);
         Task AsignarAtributoAsync(int varianteId, int atributoValorId);

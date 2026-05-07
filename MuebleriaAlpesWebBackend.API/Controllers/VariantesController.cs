@@ -29,8 +29,8 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var id = await _varianteService.CreateAsync(variante);
-            return Ok(new { id });
+            await _varianteService.CreateAsync(variante);
+            return Ok();
         }
 
         [HttpPut("{id}")]

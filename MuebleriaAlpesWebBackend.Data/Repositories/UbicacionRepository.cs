@@ -28,23 +28,26 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("p_pai_codigo", pais.Codigo);
-            parameters.Add("p_pai_nombre", pais.Nombre);
-            parameters.Add("p_pai_estado", pais.Estado);
-            parameters.Add("p_pai_pais_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_nombre", pais.Nombre);
+            parameters.Add("p_estado", pais.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_UBICACIONES.SP_CREAR_PAIS", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_pai_pais_out");
+            return parameters.Get<int>("p_id");
         }
 
         public async Task ActualizarPaisAsync(Pais pais)
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("p_pai_pais", pais.Id);
-            parameters.Add("p_pai_codigo", pais.Codigo);
-            parameters.Add("p_pai_nombre", pais.Nombre);
-            parameters.Add("p_pai_estado", pais.Estado);
+            parameters.Add("p_id", pais.Id);
+            parameters.Add("p_nombre", pais.Nombre);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
 
             await connection.ExecuteAsync("PKG_UBICACIONES.SP_ACTUALIZAR_PAIS", parameters, commandType: CommandType.StoredProcedure);
         }
@@ -65,13 +68,15 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("p_pai_pais", depto.PaisId);
-            parameters.Add("p_dep_codigo", depto.Codigo);
-            parameters.Add("p_dep_nombre", depto.Nombre);
-            parameters.Add("p_dep_estado", depto.Estado);
-            parameters.Add("p_dep_departamento_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_nombre", depto.Nombre);
+            parameters.Add("p_estado", depto.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_UBICACIONES.SP_CREAR_DEPARTAMENTO", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_dep_departamento_out");
+            return parameters.Get<int>("p_id");
         }
 
         public async Task<IEnumerable<Ciudad>> ListarCiudadesAsync()
@@ -91,13 +96,15 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("p_dep_departamento", ciudad.DepartamentoId);
-            parameters.Add("p_ciu_codigo", ciudad.Codigo);
-            parameters.Add("p_ciu_nombre", ciudad.Nombre);
-            parameters.Add("p_ciu_estado", ciudad.Estado);
-            parameters.Add("p_ciu_ciudad_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_nombre", ciudad.Nombre);
+            parameters.Add("p_estado", ciudad.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_UBICACIONES.SP_CREAR_CIUDAD", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_ciu_ciudad_out");
+            return parameters.Get<int>("p_id");
         }
 
         public async Task<IEnumerable<Idioma>> ListarIdiomasAsync()
@@ -111,13 +118,15 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("p_idi_codigo", idioma.Codigo);
-            parameters.Add("p_idi_nombre", idioma.Nombre);
-            parameters.Add("p_idi_estado", idioma.Estado);
-            parameters.Add("p_idi_idioma_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_nombre", idioma.Nombre);
+            parameters.Add("p_estado", idioma.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_UBICACIONES.SP_CREAR_IDIOMA", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_idi_idioma_out");
+            return parameters.Get<int>("p_id");
         }
 
         public async Task<IEnumerable<Moneda>> ListarMonedasAsync()
@@ -131,14 +140,16 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
-            parameters.Add("p_mon_codigo", moneda.Codigo);
-            parameters.Add("p_mon_nombre", moneda.Nombre);
-            parameters.Add("p_mon_simbolo", moneda.Simbolo);
-            parameters.Add("p_mon_estado", moneda.Estado);
-            parameters.Add("p_mon_moneda_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_nombre", moneda.Nombre);
+            parameters.Add("p_simbolo", moneda.Simbolo);
+            parameters.Add("p_estado", moneda.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_UBICACIONES.SP_CREAR_MONEDA", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_mon_moneda_out");
+            return parameters.Get<int>("p_id");
         }
     }
 }

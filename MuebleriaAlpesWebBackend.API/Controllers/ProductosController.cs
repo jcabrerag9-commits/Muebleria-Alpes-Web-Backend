@@ -37,8 +37,8 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var id = await _productoService.CreateAsync(producto);
-            return CreatedAtAction(nameof(GetById), new { id }, producto);
+            await _productoService.CreateAsync(producto);
+            return Ok();
         }
 
         [HttpPut("{id}")]

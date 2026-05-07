@@ -36,12 +36,18 @@ namespace MuebleriaAlpesWebBackend.API.Middleware
             var statusCode = HttpStatusCode.InternalServerError;
             var message = "Ocurrió un error inesperado en el servidor.";
 
-            if (exception.Message.Contains("ORA-20"))
+            if (exception.Message.Contains("ORA-"))
             {
                 statusCode = HttpStatusCode.BadRequest;
-                message = ExtractOracleMessage(exception.Message);
+                message = exception.Message;
             }
             else if (exception is ArgumentException)
+            {
+                statusCode = HttpStatusCode.BadRequest;
+                message = exception.Message;
+            }
+
+            else if (exception.Message.StartsWith("Error DB:"))
             {
                 statusCode = HttpStatusCode.BadRequest;
                 message = exception.Message;

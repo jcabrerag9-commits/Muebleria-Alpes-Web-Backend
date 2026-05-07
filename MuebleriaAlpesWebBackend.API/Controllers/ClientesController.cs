@@ -28,29 +28,37 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             return Ok(perfil);
         }
 
-        [HttpPost("registrar-completo")]
-        public async Task<IActionResult> Registrar([FromBody] RegistroClienteRequest request)
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] Cliente cliente)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var id = await _clienteService.RegistrarClienteAsync(request.Cliente, request.Email, request.Telefono);
-            return Ok(new { id, mensaje = "Cliente registrado con éxito" });
+            var id = await _clienteService.RegistrarClienteAsync(cliente);
+            return Ok();
         }
 
-        [HttpPost("{id}/emails")]
-        public async Task<IActionResult> AddEmail(int id, [FromBody] ClienteEmail email)
+        [HttpPost("{clienteId}/emails")]
+        public async Task<IActionResult> AddEmail(int clienteId, [FromBody] ClienteEmail email)
         {
-            email.ClienteId = id;
-            var emailId = await _clienteService.AddEmailAsync(email);
-            return Ok(new { id = emailId });
+            email.ClienteId = clienteId;
+            await _clienteService.AddEmailAsync(email);
+            return Ok();
         }
 
-        [HttpPost("{id}/direcciones")]
-        public async Task<IActionResult> AddDireccion(int id, [FromBody] ClienteDireccion direccion)
+        [HttpPost("{clienteId}/telefonos")]
+        public async Task<IActionResult> AddTelefono(int clienteId, [FromBody] ClienteTelefono telefono)
         {
-            direccion.ClienteId = id;
-            var dirId = await _clienteService.AddDireccionAsync(direccion);
-            return Ok(new { id = dirId });
+            telefono.ClienteId = clienteId;
+            await _clienteService.AddTelefonoAsync(telefono);
+            return Ok();
+        }
+
+        [HttpPost("{clienteId}/direcciones")]
+        public async Task<IActionResult> AddDireccion(int clienteId, [FromBody] ClienteDireccion direccion)
+        {
+            direccion.ClienteId = clienteId;
+            await _clienteService.AddDireccionAsync(direccion);
+            return Ok();
         }
 
         [HttpPut("{id}/preferencias")]
@@ -69,11 +77,4 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         }
     }
 
-    public class RegistroClienteRequest
-    {
-        [Required]
-        public Cliente Cliente { get; set; }
-        public ClienteEmail Email { get; set; }
-        public ClienteTelefono Telefono { get; set; }
-    }
 }

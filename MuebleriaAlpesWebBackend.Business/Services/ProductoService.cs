@@ -17,15 +17,12 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
         public async Task<IEnumerable<Producto>> GetAllAsync() => await _productoRepository.GetAllAsync();
         public async Task<Producto> GetByIdAsync(int id) => await _productoRepository.GetByIdAsync(id);
-        public async Task<int> CreateAsync(Producto producto)
+        public async Task CreateAsync(Producto producto)
         {
-            if (string.IsNullOrWhiteSpace(producto.Sku))
-                throw new ArgumentException("El SKU no puede estar vacío.");
-
             if (producto.Nombre.Length < 3)
                 throw new ArgumentException("El nombre del producto debe tener al menos 3 caracteres.");
 
-            return await _productoRepository.CreateAsync(producto);
+            await _productoRepository.CreateAsync(producto);
         }
         public async Task UpdateAsync(Producto producto) => await _productoRepository.UpdateAsync(producto);
         public async Task ChangeStatusAsync(int id, string estado) => await _productoRepository.ChangeStatusAsync(id, estado);

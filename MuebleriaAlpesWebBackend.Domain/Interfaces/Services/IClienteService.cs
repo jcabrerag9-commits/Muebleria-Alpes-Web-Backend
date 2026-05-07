@@ -6,14 +6,14 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
 {
     public interface IClienteService
     {
-        Task<int> RegistrarClienteAsync(Cliente cliente, ClienteEmail emailInicial, ClienteTelefono telInicial);
+        Task<int> RegistrarClienteAsync(Cliente cliente);
         Task<ClienteDetalleDto> GetPerfilAsync(int clienteId);
         Task<IEnumerable<Cliente>> GetAllAsync();
         
         // Operaciones de detalle
-        Task<int> AddEmailAsync(ClienteEmail email);
-        Task<int> AddTelefonoAsync(ClienteTelefono telefono);
-        Task<int> AddDireccionAsync(ClienteDireccion direccion);
+        Task AddEmailAsync(ClienteEmail email);
+        Task AddTelefonoAsync(ClienteTelefono telefono);
+        Task AddDireccionAsync(ClienteDireccion direccion);
         Task UpdatePreferenciasAsync(ClientePreferencia pref);
         
         Task ChangeStatusAsync(int clienteId, string nuevoEstado, string motivo, int? usuarioId);

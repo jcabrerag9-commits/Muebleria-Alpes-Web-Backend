@@ -43,7 +43,6 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("p_imagen", imagen.Id);
-            parameters.Add("p_url", imagen.Url);
             parameters.Add("p_orden", imagen.Orden);
 
             await connection.ExecuteAsync("PKG_PRODUCTO_CONTENIDO.sp_actualizar_imagen_producto", parameters, commandType: CommandType.StoredProcedure);

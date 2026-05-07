@@ -6,8 +6,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
     {
         public int Id { get; set; }
         
-        [Required, StringLength(10)]
-        public string Codigo { get; set; }
+        [StringLength(10)]
+        public string? Codigo { get; set; }
         
         [Required, StringLength(100)]
         public string Nombre { get; set; }
@@ -22,14 +22,13 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         [Required]
         public int PaisId { get; set; }
         
-        [Required, StringLength(10)]
-        public string Codigo { get; set; }
+        [StringLength(10)]
+        public string? Codigo { get; set; }
         
         [Required, StringLength(100)]
         public string Nombre { get; set; }
         
         public string Estado { get; set; } = "ACTIVO";
-        public string NombrePais { get; set; } // Para vistas de lectura
     }
 
     public class Ciudad
@@ -39,23 +38,21 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         [Required]
         public int DepartamentoId { get; set; }
         
-        [Required, StringLength(10)]
-        public string Codigo { get; set; }
+        [StringLength(10)]
+        public string? Codigo { get; set; }
         
         [Required, StringLength(100)]
         public string Nombre { get; set; }
         
         public string Estado { get; set; } = "ACTIVO";
-        public string NombreDepartamento { get; set; }
-        public string NombrePais { get; set; }
     }
 
     public class Idioma
     {
         public int Id { get; set; }
         
-        [Required, StringLength(5)]
-        public string Codigo { get; set; }
+        [StringLength(5)]
+        public string? Codigo { get; set; }
         
         [Required, StringLength(50)]
         public string Nombre { get; set; }
@@ -67,8 +64,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
     {
         public int Id { get; set; }
         
-        [Required, StringLength(5)]
-        public string Codigo { get; set; }
+        [StringLength(5)]
+        public string? Codigo { get; set; }
         
         [Required, StringLength(50)]
         public string Nombre { get; set; }

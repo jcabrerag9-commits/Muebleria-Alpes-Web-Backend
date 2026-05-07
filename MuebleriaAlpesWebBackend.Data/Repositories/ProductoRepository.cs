@@ -31,21 +31,18 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             return await connection.QueryFirstOrDefaultAsync<Producto>(query, new { id });
         }
 
-        public async Task<int> CreateAsync(Producto producto)
+        public async Task CreateAsync(Producto producto)
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("p_tipo_mueble", producto.TipoMueble);
-            parameters.Add("p_sku", producto.Sku);
             parameters.Add("p_nombre", producto.Nombre);
             parameters.Add("p_desc_corta", producto.DescripcionCorta);
             parameters.Add("p_desc_larga", producto.DescripcionLarga);
             parameters.Add("p_peso", producto.Peso);
             parameters.Add("p_es_configurable", producto.EsConfigurable);
-            parameters.Add("p_id_nuevo", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_PRODUCTOS.sp_crear_producto", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_id_nuevo");
         }
 
         public async Task UpdateAsync(Producto producto)
@@ -89,7 +86,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_alto", dimension.Alto);
             parameters.Add("p_ancho", dimension.Ancho);
             parameters.Add("p_largo", dimension.Largo);
-            parameters.Add("p_unidad", dimension.Unidad);
+            parameters.Add("p_unidad", dimension.UnidadId);
 
             await connection.ExecuteAsync("PKG_PRODUCTOS.sp_registrar_dimension_producto", parameters, commandType: CommandType.StoredProcedure);
         }

@@ -9,9 +9,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         [Required]
         public int ProductoId { get; set; }
 
-        [Required]
         [StringLength(50)]
-        public string Sku { get; set; }
+        public string? Sku { get; set; }
 
         [StringLength(255)]
         public string Nombre { get; set; }

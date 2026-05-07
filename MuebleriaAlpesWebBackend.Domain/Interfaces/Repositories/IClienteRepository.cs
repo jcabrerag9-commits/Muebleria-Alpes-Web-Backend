@@ -15,19 +15,19 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories
         Task<IEnumerable<Cliente>> ListarAsync();
 
         // Emails
-        Task<int> AgregarEmailAsync(ClienteEmail email);
+        Task AgregarEmailAsync(ClienteEmail email);
         Task ActualizarEmailAsync(ClienteEmail email);
         Task MarcarEmailPrincipalAsync(int emailId);
         Task EliminarEmailAsync(int emailId);
 
         // Teléfonos
-        Task<int> AgregarTelefonoAsync(ClienteTelefono telefono);
+        Task AgregarTelefonoAsync(ClienteTelefono telefono);
         Task ActualizarTelefonoAsync(ClienteTelefono telefono);
         Task MarcarTelefonoPrincipalAsync(int telefonoId);
         Task EliminarTelefonoAsync(int telefonoId);
 
         // Direcciones
-        Task<int> AgregarDireccionAsync(ClienteDireccion direccion);
+        Task AgregarDireccionAsync(ClienteDireccion direccion);
         Task ActualizarDireccionAsync(ClienteDireccion direccion);
         Task MarcarDireccionPrincipalAsync(int direccionId);
         Task EliminarDireccionAsync(int direccionId);

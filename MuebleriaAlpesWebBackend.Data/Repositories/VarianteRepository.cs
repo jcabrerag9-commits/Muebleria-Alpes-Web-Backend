@@ -24,19 +24,16 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             return await connection.QueryAsync<ProductoVariante>(query, new { productoId });
         }
 
-        public async Task<int> CreateAsync(ProductoVariante variante)
+        public async Task CreateAsync(ProductoVariante variante)
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("p_producto", variante.ProductoId);
-            parameters.Add("p_sku", variante.Sku);
             parameters.Add("p_nombre", variante.Nombre);
             parameters.Add("p_cod_barras", variante.CodigoBarras);
             parameters.Add("p_imagen_url", variante.ImagenUrl);
-            parameters.Add("p_id_nuevo", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_PRODUCTO_VARIANTES.sp_crear_variante_producto", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_id_nuevo");
         }
 
         public async Task UpdateAsync(ProductoVariante variante)

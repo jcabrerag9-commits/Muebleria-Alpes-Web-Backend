@@ -34,12 +34,20 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cli_fecha_nacimiento", cliente.FechaNacimiento);
             parameters.Add("p_cli_genero", cliente.Genero);
             parameters.Add("p_cli_password_plano", cliente.PasswordPlano);
-            parameters.Add("p_cli_cliente_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
-            parameters.Add("p_cli_codigo_out", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_CREAR_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
             
-            return (parameters.Get<int>("p_cli_cliente_out"), parameters.Get<string>("p_cli_codigo_out"));
+            var resultado = parameters.Get<string>("p_resultado");
+            if (resultado == "ERROR")
+            {
+                throw new Exception($"Error DB: {parameters.Get<string>("p_mensaje")}");
+            }
+            
+            return (parameters.Get<int>("p_id"), "");
         }
 
         public async Task ActualizarClienteAsync(Cliente cliente)
@@ -57,6 +65,9 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cli_razon_social", cliente.RazonSocial);
             parameters.Add("p_cli_fecha_nacimiento", cliente.FechaNacimiento);
             parameters.Add("p_cli_genero", cliente.Genero);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_ACTUALIZAR_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
         }
@@ -69,8 +80,17 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cli_estado", nuevoEstado);
             parameters.Add("p_ceh_motivo", motivo);
             parameters.Add("p_usu_usuario", usuarioId);
+            parameters.Add("p_usuario_id", usuarioId ?? 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_CAMBIAR_ESTADO_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
+
+            var resultado = parameters.Get<string>("p_resultado");
+            if (resultado == "ERROR")
+            {
+                throw new Exception($"Error DB: {parameters.Get<string>("p_mensaje")}");
+            }
         }
 
         public async Task EliminarLogicoAsync(int clienteId, string motivo, int? usuarioId)
@@ -80,8 +100,17 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cli_cliente", clienteId);
             parameters.Add("p_ceh_motivo", motivo);
             parameters.Add("p_usu_usuario", usuarioId);
+            parameters.Add("p_usuario_id", usuarioId ?? 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_ELIMINAR_CLIENTE_LOGICO", parameters, commandType: CommandType.StoredProcedure);
+
+            var resultado = parameters.Get<string>("p_resultado");
+            if (resultado == "ERROR")
+            {
+                throw new Exception($"Error DB: {parameters.Get<string>("p_mensaje")}");
+            }
         }
 
         public async Task<IEnumerable<Cliente>> ListarAsync()
@@ -134,7 +163,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         #endregion
 
         #region Detalles
-        public async Task<int> AgregarEmailAsync(ClienteEmail email)
+        public async Task AgregarEmailAsync(ClienteEmail email)
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
@@ -142,10 +171,18 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cle_email", email.Email);
             parameters.Add("p_cle_principal", email.EsPrincipal);
             parameters.Add("p_cle_estado", email.Estado);
-            parameters.Add("p_cle_cliente_email_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_AGREGAR_EMAIL_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_cle_cliente_email_out");
+            
+            var resultado = parameters.Get<string>("p_resultado");
+            if (resultado == "ERROR")
+            {
+                throw new Exception($"Error DB: {parameters.Get<string>("p_mensaje")}");
+            }
         }
 
         public async Task ActualizarEmailAsync(ClienteEmail email)
@@ -156,6 +193,9 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cle_email", email.Email);
             parameters.Add("p_cle_principal", email.EsPrincipal);
             parameters.Add("p_cle_estado", email.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_ACTUALIZAR_EMAIL_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
         }
@@ -163,16 +203,26 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         public async Task MarcarEmailPrincipalAsync(int emailId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_CLIENTES.SP_MARCAR_EMAIL_PRINCIPAL", new { p_cle_cliente_email = emailId }, commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("p_cle_cliente_email", emailId);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            await connection.ExecuteAsync("PKG_CLIENTES.SP_MARCAR_EMAIL_PRINCIPAL", parameters, commandType: CommandType.StoredProcedure);
         }
 
         public async Task EliminarEmailAsync(int emailId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_CLIENTES.SP_ELIMINAR_EMAIL_CLIENTE", new { p_cle_cliente_email = emailId }, commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("p_cle_cliente_email", emailId);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            await connection.ExecuteAsync("PKG_CLIENTES.SP_ELIMINAR_EMAIL_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<int> AgregarTelefonoAsync(ClienteTelefono telefono)
+        public async Task AgregarTelefonoAsync(ClienteTelefono telefono)
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
@@ -181,10 +231,18 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_clt_numero", telefono.Numero);
             parameters.Add("p_clt_principal", telefono.EsPrincipal);
             parameters.Add("p_clt_estado", telefono.Estado);
-            parameters.Add("p_clt_cliente_telefono_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_AGREGAR_TELEFONO_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_clt_cliente_telefono_out");
+            
+            var resultado = parameters.Get<string>("p_resultado");
+            if (resultado == "ERROR")
+            {
+                throw new Exception($"Error DB: {parameters.Get<string>("p_mensaje")}");
+            }
         }
 
         public async Task ActualizarTelefonoAsync(ClienteTelefono telefono)
@@ -196,6 +254,9 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_clt_numero", telefono.Numero);
             parameters.Add("p_clt_principal", telefono.EsPrincipal);
             parameters.Add("p_clt_estado", telefono.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_ACTUALIZAR_TELEFONO_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
         }
@@ -203,16 +264,26 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         public async Task MarcarTelefonoPrincipalAsync(int telefonoId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_CLIENTES.SP_MARCAR_TELEFONO_PRINCIPAL", new { p_clt_cliente_telefono = telefonoId }, commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("p_clt_cliente_telefono", telefonoId);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            await connection.ExecuteAsync("PKG_CLIENTES.SP_MARCAR_TELEFONO_PRINCIPAL", parameters, commandType: CommandType.StoredProcedure);
         }
 
         public async Task EliminarTelefonoAsync(int telefonoId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_CLIENTES.SP_ELIMINAR_TELEFONO_CLIENTE", new { p_clt_cliente_telefono = telefonoId }, commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("p_clt_cliente_telefono", telefonoId);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            await connection.ExecuteAsync("PKG_CLIENTES.SP_ELIMINAR_TELEFONO_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<int> AgregarDireccionAsync(ClienteDireccion direccion)
+        public async Task AgregarDireccionAsync(ClienteDireccion direccion)
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new DynamicParameters();
@@ -226,10 +297,18 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cld_codigo_postal", direccion.CodigoPostal);
             parameters.Add("p_cld_referencia", direccion.Referencia);
             parameters.Add("p_cld_principal", direccion.EsPrincipal);
-            parameters.Add("p_cld_cliente_direccion_out", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            parameters.Add("p_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_AGREGAR_DIRECCION_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
-            return parameters.Get<int>("p_cld_cliente_direccion_out");
+            
+            var resultado = parameters.Get<string>("p_resultado");
+            if (resultado == "ERROR")
+            {
+                throw new Exception($"Error DB: {parameters.Get<string>("p_mensaje")}");
+            }
         }
 
         public async Task ActualizarDireccionAsync(ClienteDireccion direccion)
@@ -247,6 +326,9 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_cld_referencia", direccion.Referencia);
             parameters.Add("p_cld_principal", direccion.EsPrincipal);
             parameters.Add("p_cld_estado", direccion.Estado);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
 
             await connection.ExecuteAsync("PKG_CLIENTES.SP_ACTUALIZAR_DIRECCION_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
         }
@@ -254,13 +336,23 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         public async Task MarcarDireccionPrincipalAsync(int direccionId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_CLIENTES.SP_MARCAR_DIRECCION_PREDETERMINADA", new { p_cld_cliente_direccion = direccionId }, commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("p_cld_cliente_direccion", direccionId);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            await connection.ExecuteAsync("PKG_CLIENTES.SP_MARCAR_DIRECCION_PREDETERMINADA", parameters, commandType: CommandType.StoredProcedure);
         }
 
         public async Task EliminarDireccionAsync(int direccionId)
         {
             using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_CLIENTES.SP_ELIMINAR_DIRECCION_CLIENTE", new { p_cld_cliente_direccion = direccionId }, commandType: CommandType.StoredProcedure);
+            var parameters = new DynamicParameters();
+            parameters.Add("p_cld_cliente_direccion", direccionId);
+            parameters.Add("p_usuario_id", 1);
+            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 255);
+            await connection.ExecuteAsync("PKG_CLIENTES.SP_ELIMINAR_DIRECCION_CLIENTE", parameters, commandType: CommandType.StoredProcedure);
         }
 
         public async Task GuardarPreferenciasAsync(ClientePreferencia pref)
