@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Business.Services;
 using MuebleriaAlpesWebBackend.Business.Services.RecursosHumanos;
 using MuebleriaAlpesWebBackend.Data.Connection;
@@ -20,7 +21,34 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<OracleConnectionFactory>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IVarianteRepository, VarianteRepository>();
+builder.Services.AddScoped<IContenidoRepository, ContenidoRepository>();
+builder.Services.AddScoped<IPrecioRepository, PrecioRepository>();
+builder.Services.AddScoped<IUbicacionRepository, UbicacionRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+
 builder.Services.AddScoped<ITestService, TestService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IVarianteService, VarianteService>();
+builder.Services.AddScoped<IContenidoService, ContenidoService>();
+builder.Services.AddScoped<IPrecioService, PrecioService>();
+builder.Services.AddScoped<IUbicacionService, UbicacionService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IVentasRepository, VentasRepository>();
+builder.Services.AddScoped<IVentasService, VentasService>();
+builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
+builder.Services.AddScoped<ICarritoService, CarritoService>();
+
+// ── Promociones ───────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();
+builder.Services.AddScoped<IPromocionService, PromocionService>();
+builder.Services.AddScoped<IBannerRepository, BannerRepository>();
+builder.Services.AddScoped<IBannerService, BannerService>();
+
+// ── Devoluciones ──────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IDevolucionRepository, DevolucionRepository>();
+builder.Services.AddScoped<IDevolucionService, DevolucionService>();
 
 builder.Services.AddCors(options =>
 {
@@ -57,6 +85,8 @@ builder.Services.AddScoped<IEvaluacionRepository, EvaluacionRepository>();
 builder.Services.AddScoped<IEvaluacionService, EvaluacionService>();
 
 var app = builder.Build();
+
+app.UseMiddleware<MuebleriaAlpesWebBackend.API.Middleware.ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
