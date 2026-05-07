@@ -15,7 +15,20 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<OracleConnectionFactory>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IVarianteRepository, VarianteRepository>();
+builder.Services.AddScoped<IContenidoRepository, ContenidoRepository>();
+builder.Services.AddScoped<IPrecioRepository, PrecioRepository>();
+builder.Services.AddScoped<IUbicacionRepository, UbicacionRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+
 builder.Services.AddScoped<ITestService, TestService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IVarianteService, VarianteService>();
+builder.Services.AddScoped<IContenidoService, ContenidoService>();
+builder.Services.AddScoped<IPrecioService, PrecioService>();
+builder.Services.AddScoped<IUbicacionService, UbicacionService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IVentasRepository, VentasRepository>();
 builder.Services.AddScoped<IVentasService, VentasService>();
 builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
@@ -44,6 +57,8 @@ builder.Services.AddCors(options =>
 
 
 var app = builder.Build();
+
+app.UseMiddleware<MuebleriaAlpesWebBackend.API.Middleware.ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
