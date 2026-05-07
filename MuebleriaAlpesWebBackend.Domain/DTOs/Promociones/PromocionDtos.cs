@@ -21,12 +21,12 @@ namespace MuebleriaAlpesWebBackend.Domain.DTOs.Promociones
     }
 
     // ── DTO Crear ────────────────────────────────────────────────────────────
+    /// <summary>
+    /// PrmCodigo se genera automáticamente en Oracle con el trigger TRG_PROMO_CODIGO.
+    /// Formato: PRM-0001, PRM-0002, etc.
+    /// </summary>
     public class PromocionCreateDto
     {
-        [Required(ErrorMessage = "El código es requerido.")]
-        [MaxLength(50)]
-        public string PrmCodigo { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "El nombre es requerido.")]
         [MaxLength(150)]
         public string PrmNombre { get; set; } = string.Empty;

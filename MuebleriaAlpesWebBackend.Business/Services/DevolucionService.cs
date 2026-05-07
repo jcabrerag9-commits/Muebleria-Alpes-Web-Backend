@@ -24,7 +24,74 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             _repo = repo;
         }
 
-        // ── Consultas ─────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════════
+        // CATEGORÍAS — CRUD COMPLETO
+        // ════════════════════════════════════════════════════════════════════
+
+        public async Task<IEnumerable<CategoriaDevolucionResponseDto>> GetCategoriasAsync(string? estado = null)
+        {
+            var lista = await _repo.GetCategoriasAsync(estado);
+            return lista.Select(MapCategoriaToDto);
+        }
+
+        public async Task<CategoriaDevolucionResponseDto?> GetCategoriaByIdAsync(long id)
+        {
+            var entity = await _repo.GetCategoriaByIdAsync(id);
+            return entity is null ? null : MapCategoriaToDto(entity);
+        }
+
+        public async Task<CategoriaDevolucionResponseDto> CreateCategoriaAsync(CategoriaDevolucionCreateDto dto)
+        {
+            // CtdCodigo ya no se pide — el trigger TRG_CTD_CODIGO lo genera en Oracle (DEV-0001)
+            var entity = new CategoriaDevolucion
+            {
+                CtdCodigo      = string.Empty,
+                CtdNombre      = dto.CtdNombre.Trim(),
+                CtdDescripcion = dto.CtdDescripcion?.Trim(),
+                CtdEstado      = "ACTIVO"
+            };
+
+            var newId = await _repo.CreateCategoriaAsync(entity);
+            return MapCategoriaToDto((await _repo.GetCategoriaByIdAsync(newId))!);
+        }
+
+        public async Task<CategoriaDevolucionResponseDto?> UpdateCategoriaAsync(long id, CategoriaDevolucionUpdateDto dto)
+        {
+            var entity = await _repo.GetCategoriaByIdAsync(id);
+            if (entity is null) return null;
+
+            if (!string.IsNullOrWhiteSpace(dto.CtdNombre))
+                entity.CtdNombre = dto.CtdNombre.Trim();
+
+            if (dto.CtdDescripcion is not null)
+                entity.CtdDescripcion = dto.CtdDescripcion.Trim();
+
+            if (!string.IsNullOrWhiteSpace(dto.CtdEstado))
+            {
+                var validos = new[] { "ACTIVO", "INACTIVO" };
+                if (!validos.Contains(dto.CtdEstado.ToUpper()))
+                    throw new ArgumentException($"Estado inválido: '{dto.CtdEstado}'. Válidos: ACTIVO, INACTIVO");
+                entity.CtdEstado = dto.CtdEstado.ToUpper();
+            }
+
+            await _repo.UpdateCategoriaAsync(entity);
+            return MapCategoriaToDto((await _repo.GetCategoriaByIdAsync(id))!);
+        }
+
+        public async Task<bool> DeleteCategoriaAsync(long id)
+        {
+            if (!await _repo.CategoriaExistsAsync(id)) return false;
+
+            if (await _repo.CategoriaEnUsoAsync(id))
+                throw new InvalidOperationException(
+                    "No se puede eliminar la categoría porque tiene devoluciones asociadas. Inactívela en su lugar.");
+
+            return await _repo.DeleteCategoriaAsync(id);
+        }
+
+        // ════════════════════════════════════════════════════════════════════
+        // DEVOLUCIONES
+        // ════════════════════════════════════════════════════════════════════
 
         public async Task<IEnumerable<DevolucionListDto>> GetAllAsync(string? estado = null, long? clienteId = null)
         {
@@ -62,13 +129,10 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             return lista.Select(MapToListDto);
         }
 
-        // ── CRUD ──────────────────────────────────────────────────────────────
-
         public async Task<DevolucionResponseDto> CreateAsync(DevolucionCreateDto dto)
         {
-            // Validar categoría
             var categoria = await _repo.GetCategoriaByIdAsync(dto.CtdCategoriaTipoDev)
-                ?? throw new KeyNotFoundException($"Categoría de devolución ID {dto.CtdCategoriaTipoDev} no encontrada.");
+                ?? throw new KeyNotFoundException($"Categoría ID {dto.CtdCategoriaTipoDev} no encontrada.");
 
             if (categoria.CtdEstado != "ACTIVO")
                 throw new InvalidOperationException($"La categoría '{categoria.CtdNombre}' no está activa.");
@@ -93,7 +157,6 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
             var newId = await _repo.CreateAsync(devolucion);
 
-            // Insertar detalles
             var detalles = dto.Detalles.Select(d => new DevolucionDetalle
             {
                 DevDevolucion        = newId,
@@ -105,7 +168,6 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             });
 
             await _repo.AddDetallesAsync(detalles);
-
             return (await GetByIdAsync(newId))!;
         }
 
@@ -143,21 +205,18 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             return await _repo.DeleteAsync(id);
         }
 
-        // ── Categorías ────────────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════════
+        // MAPEOS
+        // ════════════════════════════════════════════════════════════════════
 
-        public async Task<IEnumerable<CategoriaDevolucionResponseDto>> GetCategoriasAsync(string? estado = null)
+        private static CategoriaDevolucionResponseDto MapCategoriaToDto(CategoriaDevolucion e) => new()
         {
-            var lista = await _repo.GetCategoriasAsync(estado);
-            return lista.Select(MapCategoriaToDto);
-        }
-
-        public async Task<CategoriaDevolucionResponseDto?> GetCategoriaByIdAsync(long id)
-        {
-            var entity = await _repo.GetCategoriaByIdAsync(id);
-            return entity is null ? null : MapCategoriaToDto(entity);
-        }
-
-        // ── Mapeos ────────────────────────────────────────────────────────────
+            CtdCategoriaTipoDev = e.CtdCategoriaTipoDev,
+            CtdCodigo           = e.CtdCodigo,
+            CtdNombre           = e.CtdNombre,
+            CtdDescripcion      = e.CtdDescripcion,
+            CtdEstado           = e.CtdEstado
+        };
 
         private static DevolucionResponseDto MapToResponseDto(Devolucion e, IEnumerable<DevolucionDetalle> detalles) => new()
         {
@@ -173,12 +232,12 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             DevFechaCreacion    = e.DevFechaCreacion,
             Detalles            = detalles.Select(d => new DevolucionDetalleResponseDto
             {
-                DdeDevolucionDetalle  = d.DdeDevolucionDetalle,
-                VdeOrdenVentaDetalle  = d.VdeOrdenVentaDetalle,
-                DdeCantidad           = d.DdeCantidad,
-                DdeMonto              = d.DdeMonto,
-                DdeEstado             = d.DdeEstado,
-                DdeFechaCreacion      = d.DdeFechaCreacion
+                DdeDevolucionDetalle = d.DdeDevolucionDetalle,
+                VdeOrdenVentaDetalle = d.VdeOrdenVentaDetalle,
+                DdeCantidad          = d.DdeCantidad,
+                DdeMonto             = d.DdeMonto,
+                DdeEstado            = d.DdeEstado,
+                DdeFechaCreacion     = d.DdeFechaCreacion
             }).ToList()
         };
 
@@ -192,15 +251,6 @@ namespace MuebleriaAlpesWebBackend.Business.Services
             DevMontoTotal    = e.DevMontoTotal,
             DevFechaCreacion = e.DevFechaCreacion,
             NombreCategoria  = e.NombreCategoria
-        };
-
-        private static CategoriaDevolucionResponseDto MapCategoriaToDto(CategoriaDevolucion e) => new()
-        {
-            CtdCategoriaTipoDev = e.CtdCategoriaTipoDev,
-            CtdCodigo           = e.CtdCodigo,
-            CtdNombre           = e.CtdNombre,
-            CtdDescripcion      = e.CtdDescripcion,
-            CtdEstado           = e.CtdEstado
         };
     }
 }

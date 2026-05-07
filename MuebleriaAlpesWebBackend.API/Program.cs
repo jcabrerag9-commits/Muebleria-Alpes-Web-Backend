@@ -20,6 +20,8 @@ builder.Services.AddScoped<ITestService, TestService>();
 // ── Promociones ───────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();
 builder.Services.AddScoped<IPromocionService, PromocionService>();
+builder.Services.AddScoped<IBannerRepository, BannerRepository>();
+builder.Services.AddScoped<IBannerService, BannerService>();
 
 // ── Devoluciones ──────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IDevolucionRepository, DevolucionRepository>();
