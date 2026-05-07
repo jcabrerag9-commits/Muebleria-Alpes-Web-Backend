@@ -211,5 +211,85 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                 }
             };
         }
+
+        /// <summary>
+        /// Ejecuta SP_OBTENER_CARRITO_CLIENTE que devuelve 2 SYS_REFCURSOR:
+        /// p_cur_cabecera (1 fila) y p_cur_detalle (N filas).
+        /// Este SP NO tiene p_resultado/p_mensaje; se construye la respuesta manualmente.
+        /// </summary>
+        public async Task<BaseResponse<ObtenerCarritoClienteDataDto>> ObtenerCarritoClienteAsync(int clienteId)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SP_OBTENER_CARRITO_CLIENTE";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+
+            // --- Parámetro IN ---
+            cmd.Parameters.Add("p_cliente_id", OracleDbType.Int32, clienteId, ParameterDirection.Input);
+
+            // --- Cursores OUT (nombres exactos del SP) ---
+            var pCurCabecera = new OracleParameter("p_cur_cabecera", OracleDbType.RefCursor, ParameterDirection.Output);
+            cmd.Parameters.Add(pCurCabecera);
+
+            var pCurDetalle = new OracleParameter("p_cur_detalle", OracleDbType.RefCursor, ParameterDirection.Output);
+            cmd.Parameters.Add(pCurDetalle);
+
+            await cmd.ExecuteNonQueryAsync();
+
+            var data = new ObtenerCarritoClienteDataDto();
+
+            // ── Leer cursor cabecera ──
+            // Columnas: CAR_CARRITO, CAR_SUBTOTAL, CAR_FECHA_CREACION
+            if (pCurCabecera.Value is OracleRefCursor refCursorCabecera)
+            {
+                using var readerCabecera = refCursorCabecera.GetDataReader();
+                if (await readerCabecera.ReadAsync())
+                {
+                    data.Cabecera = new CarritoCabeceraDto
+                    {
+                        CarritoId     = readerCabecera.GetInt32(readerCabecera.GetOrdinal("CAR_CARRITO")),
+                        Subtotal      = readerCabecera.IsDBNull(readerCabecera.GetOrdinal("CAR_SUBTOTAL"))
+                                            ? 0
+                                            : readerCabecera.GetDecimal(readerCabecera.GetOrdinal("CAR_SUBTOTAL")),
+                        FechaCreacion = readerCabecera.GetDateTime(readerCabecera.GetOrdinal("CAR_FECHA_CREACION"))
+                    };
+                }
+            }
+
+            // ── Leer cursor detalle ──
+            // Columnas: CAD_CARRITO_DETALLE, PRO_PRODUCTO, PRO_NOMBRE, CAD_CANTIDAD, CAD_PRECIO_UNITARIO, CAD_SUBTOTAL
+            if (pCurDetalle.Value is OracleRefCursor refCursorDetalle)
+            {
+                using var readerDetalle = refCursorDetalle.GetDataReader();
+                while (await readerDetalle.ReadAsync())
+                {
+                    data.Detalles.Add(new CarritoDetalleDto
+                    {
+                        DetalleId      = readerDetalle.GetInt32(readerDetalle.GetOrdinal("CAD_CARRITO_DETALLE")),
+                        ProductoId     = readerDetalle.GetInt32(readerDetalle.GetOrdinal("PRO_PRODUCTO")),
+                        NombreProducto = readerDetalle.IsDBNull(readerDetalle.GetOrdinal("PRO_NOMBRE"))
+                                            ? string.Empty
+                                            : readerDetalle.GetString(readerDetalle.GetOrdinal("PRO_NOMBRE")),
+                        Cantidad       = readerDetalle.GetInt32(readerDetalle.GetOrdinal("CAD_CANTIDAD")),
+                        PrecioUnitario = readerDetalle.GetDecimal(readerDetalle.GetOrdinal("CAD_PRECIO_UNITARIO")),
+                        Subtotal       = readerDetalle.GetDecimal(readerDetalle.GetOrdinal("CAD_SUBTOTAL"))
+                    });
+                }
+            }
+
+            // El SP no devuelve p_resultado/p_mensaje; lo construimos según si encontró datos
+            bool tieneCarrito = data.Cabecera != null;
+
+            return new BaseResponse<ObtenerCarritoClienteDataDto>
+            {
+                Resultado = tieneCarrito ? "EXITO" : "ERROR",
+                Mensaje = tieneCarrito ? "Carrito obtenido correctamente" : "No se encontró carrito para el cliente",
+                Data = data
+            };
+        }
     }
 }
+

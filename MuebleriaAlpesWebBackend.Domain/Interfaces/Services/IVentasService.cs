@@ -10,5 +10,6 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
         Task<BaseResponse> CancelarOrdenAsync(CancelarOrdenRequestDto request);
         Task<BaseResponse> AplicarPromocionAsync(AplicarPromocionRequestDto request);
         Task<BaseResponse<CalcularTotalesOrdenDataDto>> CalcularTotalesOrdenAsync(int ordenId);
+        Task<BaseResponse<ListarOrdenesUsuarioDataDto>> ListarOrdenesUsuarioAsync(int clienteId);
     }
 }
