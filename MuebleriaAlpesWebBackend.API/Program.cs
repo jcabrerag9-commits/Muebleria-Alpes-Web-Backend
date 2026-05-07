@@ -21,6 +21,16 @@ builder.Services.AddScoped<IVentasService, VentasService>();
 builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 builder.Services.AddScoped<ICarritoService, CarritoService>();
 
+// ── Promociones ───────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();
+builder.Services.AddScoped<IPromocionService, PromocionService>();
+builder.Services.AddScoped<IBannerRepository, BannerRepository>();
+builder.Services.AddScoped<IBannerService, BannerService>();
+
+// ── Devoluciones ──────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IDevolucionRepository, DevolucionRepository>();
+builder.Services.AddScoped<IDevolucionService, DevolucionService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMVC", policy =>
