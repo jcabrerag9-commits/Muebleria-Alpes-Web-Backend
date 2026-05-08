@@ -10,5 +10,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
         Task<FacturacionResponse<bool>> AnularFacturaAsync(AnularFacturaRequest request);
         Task<FacturaDTO?> ObtenerFacturaPorIdAsync(int facturaId);
         Task<IEnumerable<FacturaDTO>> ObtenerFacturasPorClienteAsync(int clienteId);
+        Task<IEnumerable<FacturaDTO>> ObtenerTodasAsync(string estado = null);
+        Task<object?> ObtenerDetallePorIdAsync(int facturaId);
     }
 }

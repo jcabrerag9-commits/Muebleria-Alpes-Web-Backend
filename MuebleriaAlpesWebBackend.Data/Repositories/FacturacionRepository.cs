@@ -66,18 +66,18 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
         public async Task<FacturaDTO?> ObtenerFacturaPorIdAsync(int facturaId)
         {
-            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
-            await connection.OpenAsync();
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
 
-            using var command = connection.CreateCommand();
+            using var command = (OracleCommand)connection.CreateCommand();
             command.CommandText = "PKG_FACTURACION.SP_OBTENER_FACTURA";
             command.CommandType = CommandType.StoredProcedure;
 
             command.Parameters.Add("p_factura_id", OracleDbType.Int32).Value = facturaId;
             command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-            using var reader = await command.ExecuteReaderAsync();
-            if (await reader.ReadAsync())
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
             {
                 return MapReaderToFactura(reader);
             }
@@ -89,10 +89,10 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             var facturas = new List<FacturaDTO>();
 
-            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
-            await connection.OpenAsync();
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
 
-            using var command = connection.CreateCommand();
+            using var command = (OracleCommand)connection.CreateCommand();
             command.CommandText = "PKG_FACTURACION.SP_LISTAR_FACTURAS_CLIENTE";
             command.CommandType = CommandType.StoredProcedure;
 
@@ -100,13 +100,56 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             command.Parameters.Add("p_estado", OracleDbType.Varchar2).Value = null;
             command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
-            using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
             {
                 facturas.Add(MapReaderToFactura(reader));
             }
 
             return facturas;
+        }
+
+        public async Task<bool> ActualizarEstadoFacturaAsync(int facturaId, string estado, IDbTransaction transaction = null)
+        {
+            var connection = transaction?.Connection ?? _connectionFactory.CreateConnection();
+            string sql = "UPDATE ALP_FACTURA SET FAC_ESTADO = :estado WHERE FAC_FACTURA = :facturaId";
+            
+            var rows = await connection.ExecuteAsync(sql, new { estado, facturaId }, transaction: transaction);
+            return rows > 0;
+        }
+
+        public async Task<IEnumerable<FacturaDTO>> ObtenerTodasAsync(string estado = null)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            string sql = @"
+                SELECT FAC_FACTURA as FacturaId, VEN_ORDEN_VENTA as OrdenId, CLI_CLIENTE as ClienteId, 
+                       FAC_NUMERO as Numero, FAC_SERIE as Serie, FAC_SUBTOTAL as Subtotal, 
+                       FAC_IMPUESTOS as Impuestos, FAC_TOTAL as Total, FAC_ESTADO as Estado, 
+                       FAC_FECHA_EMISION as FechaEmision 
+                FROM ALP_FACTURA 
+                WHERE (:estado IS NULL OR FAC_ESTADO = :estado)
+                ORDER BY FAC_FECHA_EMISION DESC";
+            
+            return await connection.QueryAsync<FacturaDTO>(sql, new { estado });
+        }
+
+        public async Task<object?> ObtenerDetallePorIdAsync(int facturaId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            connection.Open();
+            
+            using var command = (OracleCommand)connection.CreateCommand();
+            command.CommandText = "PKG_FACTURACION.SP_OBTENER_FACTURA";
+            command.CommandType = CommandType.StoredProcedure;
+            command.Parameters.Add("p_factura_id", OracleDbType.Int32).Value = facturaId;
+            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                return MapReaderToFactura(reader);
+            }
+            return null;
         }
 
         private FacturaDTO MapReaderToFactura(IDataReader reader)

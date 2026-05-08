@@ -40,5 +40,37 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
                 return StatusCode(500, new { mensaje = "Error interno del servidor", detalle = ex.Message });
             }
         }
+
+        // --- NUEVOS ENDPOINTS ---
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var pago = await _pagoService.ObtenerPorIdAsync(id);
+            if (pago == null) return NotFound(new { mensaje = "Pago no encontrado" });
+            return Ok(pago);
+        }
+
+        [HttpGet("listado")]
+        public async Task<IActionResult> GetAll()
+        {
+            var pagos = await _pagoService.ObtenerTodosAsync();
+            return Ok(pagos);
+        }
+
+        [HttpGet("factura/{facturaId}")]
+        public async Task<IActionResult> GetByFactura(int facturaId)
+        {
+            var pagos = await _pagoService.ObtenerPorFacturaIdAsync(facturaId);
+            return Ok(pagos);
+        }
+
+        [HttpPut("anular/{id}")]
+        public async Task<IActionResult> Anular(int id)
+        {
+            var resultado = await _pagoService.AnularPagoAsync(id);
+            if (!resultado) return BadRequest(new { mensaje = "No se pudo anular el pago" });
+            return Ok(new { mensaje = "Pago anulado correctamente" });
+        }
     }
 }

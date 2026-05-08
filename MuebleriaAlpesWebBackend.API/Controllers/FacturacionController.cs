@@ -74,5 +74,41 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             }
             return Ok(response);
         }
+
+        // --- NUEVOS ENDPOINTS ---
+
+        [HttpGet("listado")]
+        public async Task<IActionResult> GetAll([FromQuery] string? estado = null)
+        {
+            var facturas = await _facturacionService.ObtenerTodasAsync(estado);
+            return Ok(new FacturacionResponse<IEnumerable<FacturaDTO>>
+            {
+                Resultado = "EXITO",
+                Mensaje = "Consulta general exitosa.",
+                Data = facturas
+            });
+        }
+
+        [HttpGet("detalle/{id}")]
+        public async Task<IActionResult> GetDetalle(int id)
+        {
+            var detalle = await _facturacionService.ObtenerDetallePorIdAsync(id);
+            if (detalle == null)
+            {
+                return NotFound(new FacturacionResponse<object>
+                {
+                    Resultado = "ERROR",
+                    Mensaje = "Detalle de factura no encontrado.",
+                    Data = null
+                });
+            }
+
+            return Ok(new FacturacionResponse<object>
+            {
+                Resultado = "EXITO",
+                Mensaje = "Detalle obtenido con éxito.",
+                Data = detalle
+            });
+        }
     }
 }

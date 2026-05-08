@@ -55,5 +55,18 @@ namespace MuebleriaAlpesWebBackend.Business.Services
         {
             return await _facturacionRepository.ObtenerFacturasPorClienteAsync(clienteId);
         }
+
+        public async Task<IEnumerable<FacturaDTO>> ObtenerTodasAsync(string estado = null)
+        {
+            // Nota: Se asume que el repositorio ya tiene o tendrá este método
+            // Implementación passthrough estándar del proyecto
+            return await _facturacionRepository.ObtenerTodasAsync(estado);
+        }
+
+        public async Task<object?> ObtenerDetallePorIdAsync(int facturaId)
+        {
+            // Nota: Se asume que el repositorio implementará la carga de detalles
+            return await _facturacionRepository.ObtenerDetallePorIdAsync(facturaId);
+        }
     }
 }

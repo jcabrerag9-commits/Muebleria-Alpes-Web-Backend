@@ -20,6 +20,12 @@ builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IFacturacionRepository, FacturacionRepository>();
 builder.Services.AddScoped<IFacturacionService, FacturacionService>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IInventarioRepository, InventarioRepository>();
+builder.Services.AddScoped<IInventarioService, InventarioService>();
+builder.Services.AddScoped<IProductoImagenRepository, ProductoImagenRepository>();
+builder.Services.AddScoped<IProductoImagenService, ProductoImagenService>();
 
 builder.Services.AddCors(options =>
 {
