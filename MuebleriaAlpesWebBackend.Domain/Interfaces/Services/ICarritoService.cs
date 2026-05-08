@@ -11,5 +11,6 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
         Task<BaseResponse> VaciarCarritoAsync(int carritoId);
         Task<BaseResponse<CalcularTotalCarritoDataDto>> CalcularTotalAsync(int carritoId);
         Task<BaseResponse<ConvertirOrdenCarritoDataDto>> ConvertirOrdenAsync(ConvertirOrdenCarritoRequestDto request);
+        Task<BaseResponse<ObtenerCarritoClienteDataDto>> ObtenerCarritoClienteAsync(int clienteId);
     }
 }

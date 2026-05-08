@@ -251,5 +251,66 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                 }
             };
         }
+
+        /// <summary>
+        /// Ejecuta SP_LISTAR_ORDENES_USUARIO que devuelve un SYS_REFCURSOR con las órdenes
+        /// del cliente. Este SP NO tiene p_resultado/p_mensaje; se construye la respuesta manualmente.
+        /// Parámetros del SP: p_cliente_id IN, p_cursor OUT SYS_REFCURSOR.
+        /// </summary>
+        public async Task<BaseResponse<ListarOrdenesUsuarioDataDto>> ListarOrdenesUsuarioAsync(int clienteId)
+        {
+            using var connection = (OracleConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SP_LISTAR_ORDENES_USUARIO";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.BindByName = true;
+
+            // --- Parámetro IN (nombre exacto del SP) ---
+            cmd.Parameters.Add("p_cliente_id", OracleDbType.Int32, clienteId, ParameterDirection.Input);
+
+            // --- Cursor OUT (nombre exacto del SP) ---
+            var pCursor = new OracleParameter("p_cursor", OracleDbType.RefCursor, ParameterDirection.Output);
+            cmd.Parameters.Add(pCursor);
+
+            await cmd.ExecuteNonQueryAsync();
+
+            var data = new ListarOrdenesUsuarioDataDto();
+
+            // ── Leer cursor de órdenes ──
+            // Columnas: VEN_ORDEN_VENTA, VEN_NUMERO_ORDEN, VEN_FECHA_ORDEN, VEN_TOTAL, ESTADO_ORDEN
+            if (pCursor.Value is OracleRefCursor refCursor)
+            {
+                using var reader = refCursor.GetDataReader();
+                while (await reader.ReadAsync())
+                {
+                    data.Ordenes.Add(new OrdenUsuarioDto
+                    {
+                        OrdenId      = reader.GetInt32(reader.GetOrdinal("VEN_ORDEN_VENTA")),
+                        NumeroOrden  = reader.IsDBNull(reader.GetOrdinal("VEN_NUMERO_ORDEN"))
+                                          ? string.Empty
+                                          : reader.GetString(reader.GetOrdinal("VEN_NUMERO_ORDEN")),
+                        FechaOrden   = reader.GetDateTime(reader.GetOrdinal("VEN_FECHA_ORDEN")),
+                        Total        = reader.IsDBNull(reader.GetOrdinal("VEN_TOTAL"))
+                                          ? 0
+                                          : reader.GetDecimal(reader.GetOrdinal("VEN_TOTAL")),
+                        EstadoOrden  = reader.IsDBNull(reader.GetOrdinal("ESTADO_ORDEN"))
+                                          ? string.Empty
+                                          : reader.GetString(reader.GetOrdinal("ESTADO_ORDEN"))
+                    });
+                }
+            }
+
+            return new BaseResponse<ListarOrdenesUsuarioDataDto>
+            {
+                Resultado = "EXITO",
+                Mensaje = data.Ordenes.Count > 0
+                    ? $"{data.Ordenes.Count} orden(es) encontrada(s)"
+                    : "No se encontraron órdenes para el cliente",
+                Data = data
+            };
+        }
     }
 }
+

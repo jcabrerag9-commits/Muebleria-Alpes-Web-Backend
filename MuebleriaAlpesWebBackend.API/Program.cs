@@ -39,6 +39,14 @@ builder.Services.AddScoped<IVentasRepository, VentasRepository>();
 builder.Services.AddScoped<IVentasService, VentasService>();
 builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 builder.Services.AddScoped<ICarritoService, CarritoService>();
+builder.Services.AddScoped<ILogisticaRepository, LogisticaRepository>();
+builder.Services.AddScoped<ILogisticaService, LogisticaService>();
+builder.Services.AddScoped<IReportesRepository, ReportesRepository>();
+builder.Services.AddScoped<IReportesService, ReportesService>();
+builder.Services.AddScoped<ICajaRepository, CajaRepository>();
+builder.Services.AddScoped<ICajaService, CajaService>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 // ── Promociones ───────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();

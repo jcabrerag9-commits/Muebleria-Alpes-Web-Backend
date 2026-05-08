@@ -98,5 +98,19 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
                 return StatusCode(500, new { resultado = "ERROR", mensaje = "Error interno al convertir a orden", detalle = ex.Message });
             }
         }
+
+        [HttpGet("cliente/{clienteId}")]
+        public async Task<IActionResult> ObtenerCarritoCliente(int clienteId)
+        {
+            try
+            {
+                var resultado = await _carritoService.ObtenerCarritoClienteAsync(clienteId);
+                return resultado.Exitoso ? Ok(resultado) : BadRequest(resultado);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { resultado = "ERROR", mensaje = "Error interno al obtener carrito del cliente", detalle = ex.Message });
+            }
+        }
     }
 }

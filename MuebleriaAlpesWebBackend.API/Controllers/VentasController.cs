@@ -84,5 +84,19 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
                 return StatusCode(500, new { resultado = "ERROR", mensaje = "Error interno al calcular totales", detalle = ex.Message });
             }
         }
+
+        [HttpGet("ordenes/cliente/{clienteId}")]
+        public async Task<IActionResult> ListarOrdenesUsuario(int clienteId)
+        {
+            try
+            {
+                var resultado = await _ventasService.ListarOrdenesUsuarioAsync(clienteId);
+                return resultado.Exitoso ? Ok(resultado) : BadRequest(resultado);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { resultado = "ERROR", mensaje = "Error interno al listar órdenes del cliente", detalle = ex.Message });
+            }
+        }
     }
 }

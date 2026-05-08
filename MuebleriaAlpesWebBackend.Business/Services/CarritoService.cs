@@ -61,5 +61,19 @@ namespace MuebleriaAlpesWebBackend.Business.Services
         {
             return await _carritoRepository.ConvertirOrdenAsync(request);
         }
+
+        public async Task<BaseResponse<ObtenerCarritoClienteDataDto>> ObtenerCarritoClienteAsync(int clienteId)
+        {
+            if (clienteId <= 0)
+            {
+                return new BaseResponse<ObtenerCarritoClienteDataDto>
+                {
+                    Resultado = "ERROR",
+                    Mensaje = "El ID del cliente debe ser mayor a cero"
+                };
+            }
+
+            return await _carritoRepository.ObtenerCarritoClienteAsync(clienteId);
+        }
     }
 }
