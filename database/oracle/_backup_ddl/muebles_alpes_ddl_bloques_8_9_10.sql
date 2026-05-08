@@ -1,0 +1,742 @@
+-- ============================================================================
+-- PROYECTO: MUEBLES LOS ALPES - BLOQUES 8, 9 Y 10 (FINAL)
+-- MOTOR: Oracle Database 21c
+-- ============================================================================
+
+-- ============================================================================
+-- BLOQUE 8: VENTAS Y COMERCIO ELECTRÓNICO
+-- ============================================================================
+-- Descripción: Gestión de ventas, promociones, carrito, órdenes
+-- Incluye: Canales, promociones, banners, carritos, órdenes de venta
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_CANAL_VENTA
+-- Descripción: Canales de venta
+-- Ejemplos: 'E-COMMERCE', 'TIENDA_FISICA', 'TELEFONO', 'MARKETPLACE'
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_CANAL_VENTA (
+    CVE_CANAL_VENTA          NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    CVE_CODIGO               VARCHAR2(50) NOT NULL UNIQUE,
+    CVE_NOMBRE               VARCHAR2(150) NOT NULL,
+    CVE_DESCRIPCION          VARCHAR2(500),
+    CVE_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT CHK_CVE_CODIGO CHECK (LENGTH(CVE_CODIGO) >= 3)
+);
+
+COMMENT ON TABLE ALP_CANAL_VENTA IS 'Canales de venta (omnicanal)';
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_PROMOCION
+-- Descripción: Promociones y descuentos
+-- Tipos: Porcentaje, monto fijo, 2x1, etc.
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_PROMOCION (
+    PRM_PROMOCION            NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    PRM_CODIGO               VARCHAR2(50) NOT NULL UNIQUE,
+    PRM_NOMBRE               VARCHAR2(150) NOT NULL,
+    PRM_DESCRIPCION          VARCHAR2(1000),
+    PRM_TIPO                 VARCHAR2(20) NOT NULL,
+    PRM_VALOR                NUMBER(12,2),
+    PRM_FECHA_INICIO         TIMESTAMP NOT NULL,
+    PRM_FECHA_FIN            TIMESTAMP NOT NULL,
+    PRM_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    
+    CONSTRAINT CHK_PRM_TIPO CHECK (PRM_TIPO IN ('PORCENTAJE', 'MONTO_FIJO', '2X1', 'ENVIO_GRATIS', 'COMPRA_MINIMA')),
+    CONSTRAINT CHK_PRM_ESTADO CHECK (PRM_ESTADO IN ('ACTIVO', 'INACTIVO', 'EXPIRADO')),
+    CONSTRAINT CHK_PRM_FECHAS CHECK (PRM_FECHA_FIN > PRM_FECHA_INICIO),
+    CONSTRAINT CHK_PRM_VALOR CHECK (PRM_VALOR IS NULL OR PRM_VALOR > 0)
+);
+
+COMMENT ON TABLE ALP_PROMOCION IS 'Campañas promocionales y descuentos';
+COMMENT ON COLUMN ALP_PROMOCION.PRM_VALOR IS 'Porcentaje (0-100) o monto fijo';
+
+CREATE INDEX IDX_PRM_ESTADO ON ALP_PROMOCION(PRM_ESTADO);
+CREATE INDEX IDX_PRM_FECHAS ON ALP_PROMOCION(PRM_FECHA_INICIO, PRM_FECHA_FIN);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_PROMOCION_PRODUCTO
+-- Descripción: Productos incluidos en promociones
+-- Relación muchos a muchos entre promociones y productos
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_PROMOCION_PRODUCTO (
+    PPO_PROMOCION_PRODUCTO   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    PRM_PROMOCION            NUMBER NOT NULL,
+    PRO_PRODUCTO             NUMBER,
+    PVA_PRODUCTO_VARIANTE    NUMBER,
+    PPO_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    PPO_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_PPO_PROMOCION FOREIGN KEY (PRM_PROMOCION) 
+        REFERENCES ALP_PROMOCION(PRM_PROMOCION),
+    CONSTRAINT FK_PPO_PRODUCTO FOREIGN KEY (PRO_PRODUCTO) 
+        REFERENCES ALP_PRODUCTO(PRO_PRODUCTO),
+    CONSTRAINT FK_PPO_VARIANTE FOREIGN KEY (PVA_PRODUCTO_VARIANTE) 
+        REFERENCES ALP_PRODUCTO_VARIANTE(PVA_PRODUCTO_VARIANTE),
+    CONSTRAINT CHK_PPO_ESTADO CHECK (PPO_ESTADO IN ('ACTIVO', 'INACTIVO')),
+    CONSTRAINT CHK_PPO_PRODUCTO_O_VARIANTE CHECK (
+        (PRO_PRODUCTO IS NOT NULL AND PVA_PRODUCTO_VARIANTE IS NULL) OR
+        (PRO_PRODUCTO IS NULL AND PVA_PRODUCTO_VARIANTE IS NOT NULL)
+    )
+);
+
+COMMENT ON TABLE ALP_PROMOCION_PRODUCTO IS 'Productos elegibles para promociones';
+
+CREATE INDEX IDX_PPO_PROMOCION ON ALP_PROMOCION_PRODUCTO(PRM_PROMOCION);
+CREATE INDEX IDX_PPO_PRODUCTO ON ALP_PROMOCION_PRODUCTO(PRO_PRODUCTO);
+CREATE INDEX IDX_PPO_VARIANTE ON ALP_PROMOCION_PRODUCTO(PVA_PRODUCTO_VARIANTE);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_BANNER
+-- Descripción: Banners publicitarios
+-- Uso: Homepage, categorías, campañas
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_BANNER (
+    BAN_BANNER               NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    BAN_TITULO               VARCHAR2(255) NOT NULL,
+    BAN_IMAGEN_URL           VARCHAR2(500) NOT NULL,
+    BAN_ENLACE               VARCHAR2(500),
+    BAN_POSICION             VARCHAR2(50),
+    BAN_FECHA_INICIO         TIMESTAMP NOT NULL,
+    BAN_FECHA_FIN            TIMESTAMP,
+    BAN_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    
+    CONSTRAINT CHK_BAN_ESTADO CHECK (BAN_ESTADO IN ('ACTIVO', 'INACTIVO', 'PROGRAMADO', 'EXPIRADO'))
+);
+
+COMMENT ON TABLE ALP_BANNER IS 'Banners publicitarios del sitio web';
+
+CREATE INDEX IDX_BAN_ESTADO ON ALP_BANNER(BAN_ESTADO);
+CREATE INDEX IDX_BAN_FECHAS ON ALP_BANNER(BAN_FECHA_INICIO, BAN_FECHA_FIN);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_CLICK_BANNER
+-- Descripción: Tracking de clicks en banners
+-- Analytics: CTR, conversión
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_CLICK_BANNER (
+    CLB_CLICK_BANNER         NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    BAN_BANNER               NUMBER NOT NULL,
+    CLI_CLIENTE              NUMBER,
+    CLB_FECHA_CLICK          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CLB_PLATAFORMA           VARCHAR2(20),
+    CLB_ORIGEN               VARCHAR2(100),
+    CLB_DETALLE              VARCHAR2(500),
+    
+    CONSTRAINT FK_CLB_BANNER FOREIGN KEY (BAN_BANNER) 
+        REFERENCES ALP_BANNER(BAN_BANNER),
+    CONSTRAINT FK_CLB_CLIENTE FOREIGN KEY (CLI_CLIENTE) 
+        REFERENCES ALP_CLIENTE(CLI_CLIENTE),
+    CONSTRAINT CHK_CLB_PLATAFORMA CHECK (CLB_PLATAFORMA IN ('WEB', 'MOBILE', 'APP', 'TABLET'))
+);
+
+COMMENT ON TABLE ALP_CLICK_BANNER IS 'Tracking de interacciones con banners';
+
+CREATE INDEX IDX_CLB_BANNER ON ALP_CLICK_BANNER(BAN_BANNER);
+CREATE INDEX IDX_CLB_CLIENTE ON ALP_CLICK_BANNER(CLI_CLIENTE);
+CREATE INDEX IDX_CLB_FECHA ON ALP_CLICK_BANNER(CLB_FECHA_CLICK);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_CARRITO
+-- Descripción: Carritos de compra
+-- Persistencia de carritos para usuarios registrados
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_CARRITO (
+    CAR_CARRITO              NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    CLI_CLIENTE              NUMBER NOT NULL,
+    CAR_SESION_ID            VARCHAR2(100),
+    CAR_SUBTOTAL             NUMBER(12,2) DEFAULT 0,
+    CAR_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CAR_FECHA_ACTUALIZACION  TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_CAR_CLIENTE FOREIGN KEY (CLI_CLIENTE) 
+        REFERENCES ALP_CLIENTE(CLI_CLIENTE),
+    CONSTRAINT UNQ_CAR_CLIENTE UNIQUE (CLI_CLIENTE),
+    CONSTRAINT CHK_CAR_SUBTOTAL CHECK (CAR_SUBTOTAL >= 0)
+);
+
+COMMENT ON TABLE ALP_CARRITO IS 'Carritos de compra persistentes';
+
+CREATE INDEX IDX_CAR_SESION ON ALP_CARRITO(CAR_SESION_ID);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_CARRITO_DETALLE
+-- Descripción: Items en el carrito
+-- Productos y cantidades seleccionadas
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_CARRITO_DETALLE (
+    CAD_CARRITO_DETALLE      NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    CAR_CARRITO              NUMBER NOT NULL,
+    PRO_PRODUCTO             NUMBER,
+    PVA_PRODUCTO_VARIANTE    NUMBER,
+    CAD_CANTIDAD             NUMBER(12,2) NOT NULL,
+    CAD_PRECIO_UNITARIO      NUMBER(12,2) NOT NULL,
+    CAD_SUBTOTAL             NUMBER(12,2) NOT NULL,
+    CAD_FECHA_AGREGADO       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CAD_OBSERVACION          VARCHAR2(500),
+    
+    CONSTRAINT FK_CAD_CARRITO FOREIGN KEY (CAR_CARRITO) 
+        REFERENCES ALP_CARRITO(CAR_CARRITO),
+    CONSTRAINT FK_CAD_PRODUCTO FOREIGN KEY (PRO_PRODUCTO) 
+        REFERENCES ALP_PRODUCTO(PRO_PRODUCTO),
+    CONSTRAINT FK_CAD_VARIANTE FOREIGN KEY (PVA_PRODUCTO_VARIANTE) 
+        REFERENCES ALP_PRODUCTO_VARIANTE(PVA_PRODUCTO_VARIANTE),
+    CONSTRAINT CHK_CAD_PRODUCTO_O_VARIANTE CHECK (
+        (PRO_PRODUCTO IS NOT NULL AND PVA_PRODUCTO_VARIANTE IS NULL) OR
+        (PRO_PRODUCTO IS NULL AND PVA_PRODUCTO_VARIANTE IS NOT NULL)
+    ),
+    CONSTRAINT CHK_CAD_CANTIDAD CHECK (CAD_CANTIDAD > 0),
+    CONSTRAINT CHK_CAD_PRECIO CHECK (CAD_PRECIO_UNITARIO >= 0),
+    CONSTRAINT CHK_CAD_SUBTOTAL CHECK (CAD_SUBTOTAL >= 0)
+);
+
+COMMENT ON TABLE ALP_CARRITO_DETALLE IS 'Items del carrito de compra';
+
+CREATE INDEX IDX_CAD_CARRITO ON ALP_CARRITO_DETALLE(CAR_CARRITO);
+CREATE INDEX IDX_CAD_PRODUCTO ON ALP_CARRITO_DETALLE(PRO_PRODUCTO);
+CREATE INDEX IDX_CAD_VARIANTE ON ALP_CARRITO_DETALLE(PVA_PRODUCTO_VARIANTE);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_LISTA_DESEOS
+-- Descripción: Listas de deseos de clientes
+-- Wishlist para productos favoritos
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_LISTA_DESEOS (
+    LID_LISTA_DESEOS         NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    CLI_CLIENTE              NUMBER NOT NULL,
+    LID_NOMBRE               VARCHAR2(150) DEFAULT 'Mi Lista' NOT NULL,
+    LID_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_LID_CLIENTE FOREIGN KEY (CLI_CLIENTE) 
+        REFERENCES ALP_CLIENTE(CLI_CLIENTE)
+);
+
+COMMENT ON TABLE ALP_LISTA_DESEOS IS 'Listas de deseos de clientes (wishlist)';
+
+CREATE INDEX IDX_LID_CLIENTE ON ALP_LISTA_DESEOS(CLI_CLIENTE);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_LISTA_DESEOS_DETALLE
+-- Descripción: Productos en lista de deseos
+-- Items guardados para compra futura
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_LISTA_DESEOS_DETALLE (
+    LDD_LISTA_DESEOS_DETALLE NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    LID_LISTA_DESEOS         NUMBER NOT NULL,
+    PRO_PRODUCTO             NUMBER,
+    PVA_PRODUCTO_VARIANTE    NUMBER,
+    LDD_PRIORIDAD            NUMBER(2),
+    LDD_COMENTARIO           VARCHAR2(500),
+    LDD_FECHA_AGREGADO       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    LDD_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    
+    CONSTRAINT FK_LDD_LISTA FOREIGN KEY (LID_LISTA_DESEOS) 
+        REFERENCES ALP_LISTA_DESEOS(LID_LISTA_DESEOS),
+    CONSTRAINT FK_LDD_PRODUCTO FOREIGN KEY (PRO_PRODUCTO) 
+        REFERENCES ALP_PRODUCTO(PRO_PRODUCTO),
+    CONSTRAINT FK_LDD_VARIANTE FOREIGN KEY (PVA_PRODUCTO_VARIANTE) 
+        REFERENCES ALP_PRODUCTO_VARIANTE(PVA_PRODUCTO_VARIANTE),
+    CONSTRAINT CHK_LDD_ESTADO CHECK (LDD_ESTADO IN ('ACTIVO', 'COMPRADO', 'REMOVIDO')),
+    CONSTRAINT CHK_LDD_PRIORIDAD CHECK (LDD_PRIORIDAD IS NULL OR (LDD_PRIORIDAD >= 1 AND LDD_PRIORIDAD <= 10)),
+    CONSTRAINT CHK_LDD_PRODUCTO_O_VARIANTE CHECK (
+        (PRO_PRODUCTO IS NOT NULL AND PVA_PRODUCTO_VARIANTE IS NULL) OR
+        (PRO_PRODUCTO IS NULL AND PVA_PRODUCTO_VARIANTE IS NOT NULL)
+    )
+);
+
+COMMENT ON TABLE ALP_LISTA_DESEOS_DETALLE IS 'Items en lista de deseos';
+
+CREATE INDEX IDX_LDD_LISTA ON ALP_LISTA_DESEOS_DETALLE(LID_LISTA_DESEOS);
+CREATE INDEX IDX_LDD_PRODUCTO ON ALP_LISTA_DESEOS_DETALLE(PRO_PRODUCTO);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_ESTADO_ORDEN
+-- Descripción: Estados de órdenes de venta
+-- Workflow: PENDIENTE → PROCESANDO → ENVIADO → ENTREGADO
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_ESTADO_ORDEN (
+    ESO_ESTADO_ORDEN         NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ESO_CODIGO               VARCHAR2(50) NOT NULL UNIQUE,
+    ESO_NOMBRE               VARCHAR2(100) NOT NULL,
+    ESO_DESCRIPCION          VARCHAR2(500),
+    ESO_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    
+    CONSTRAINT CHK_ESO_ESTADO CHECK (ESO_ESTADO IN ('ACTIVO', 'INACTIVO'))
+);
+
+COMMENT ON TABLE ALP_ESTADO_ORDEN IS 'Estados del ciclo de vida de órdenes';
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_ORDEN_VENTA
+-- Descripción: Órdenes de venta (encabezado)
+-- CRÍTICO: Tabla principal de transacciones
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_ORDEN_VENTA (
+    VEN_ORDEN_VENTA          NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    CLI_CLIENTE              NUMBER NOT NULL,
+    CVE_CANAL_VENTA          NUMBER NOT NULL,
+    CLD_CLIENTE_DIRECCION    NUMBER,
+    VEN_NUMERO_ORDEN         VARCHAR2(50) NOT NULL UNIQUE,
+    VEN_FECHA_ORDEN          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    VEN_SUBTOTAL             NUMBER(12,2) NOT NULL,
+    VEN_DESCUENTO            NUMBER(12,2) DEFAULT 0,
+    VEN_IMPUESTOS            NUMBER(12,2) DEFAULT 0,
+    VEN_ENVIO                NUMBER(12,2) DEFAULT 0,
+    VEN_TOTAL                NUMBER(12,2) NOT NULL,
+    VEN_OBSERVACIONES        VARCHAR2(1000),
+    ESO_ESTADO_ORDEN         NUMBER NOT NULL,
+    VEN_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_VEN_CLIENTE FOREIGN KEY (CLI_CLIENTE) 
+        REFERENCES ALP_CLIENTE(CLI_CLIENTE),
+    CONSTRAINT FK_VEN_CANAL FOREIGN KEY (CVE_CANAL_VENTA) 
+        REFERENCES ALP_CANAL_VENTA(CVE_CANAL_VENTA),
+    CONSTRAINT FK_VEN_DIRECCION FOREIGN KEY (CLD_CLIENTE_DIRECCION) 
+        REFERENCES ALP_CLIENTE_DIRECCION(CLD_CLIENTE_DIRECCION),
+    CONSTRAINT FK_VEN_ESTADO FOREIGN KEY (ESO_ESTADO_ORDEN) 
+        REFERENCES ALP_ESTADO_ORDEN(ESO_ESTADO_ORDEN),
+    CONSTRAINT CHK_VEN_MONTOS CHECK (
+        VEN_SUBTOTAL >= 0 AND 
+        VEN_DESCUENTO >= 0 AND 
+        VEN_IMPUESTOS >= 0 AND 
+        VEN_ENVIO >= 0 AND 
+        VEN_TOTAL >= 0
+    )
+);
+
+COMMENT ON TABLE ALP_ORDEN_VENTA IS 'Órdenes de venta (transacciones principales)';
+COMMENT ON COLUMN ALP_ORDEN_VENTA.VEN_NUMERO_ORDEN IS 'Número único de orden (ej: ORD-2026-00001)';
+
+CREATE INDEX IDX_VEN_CLIENTE ON ALP_ORDEN_VENTA(CLI_CLIENTE);
+CREATE INDEX IDX_VEN_CANAL ON ALP_ORDEN_VENTA(CVE_CANAL_VENTA);
+CREATE INDEX IDX_VEN_ESTADO ON ALP_ORDEN_VENTA(ESO_ESTADO_ORDEN);
+CREATE INDEX IDX_VEN_FECHA ON ALP_ORDEN_VENTA(VEN_FECHA_ORDEN);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_ORDEN_VENTA_DETALLE
+-- Descripción: Líneas de detalle de orden de venta
+-- Items comprados con precios históricos
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_ORDEN_VENTA_DETALLE (
+    VDE_ORDEN_VENTA_DETALLE  NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    PRO_PRODUCTO             NUMBER,
+    PVA_PRODUCTO_VARIANTE    NUMBER,
+    VDE_CANTIDAD             NUMBER(12,2) NOT NULL,
+    VDE_PRECIO_UNITARIO      NUMBER(12,2) NOT NULL,
+    VDE_DESCUENTO            NUMBER(12,2) DEFAULT 0,
+    VDE_IMPUESTO             NUMBER(12,2) DEFAULT 0,
+    VDE_SUBTOTAL             NUMBER(12,2) NOT NULL,
+    VDE_TOTAL                NUMBER(12,2) NOT NULL,
+    VDE_OBSERVACION          VARCHAR2(500),
+    VDE_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    
+    CONSTRAINT FK_VDE_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT FK_VDE_PRODUCTO FOREIGN KEY (PRO_PRODUCTO) 
+        REFERENCES ALP_PRODUCTO(PRO_PRODUCTO),
+    CONSTRAINT FK_VDE_VARIANTE FOREIGN KEY (PVA_PRODUCTO_VARIANTE) 
+        REFERENCES ALP_PRODUCTO_VARIANTE(PVA_PRODUCTO_VARIANTE),
+    CONSTRAINT CHK_VDE_PRODUCTO_O_VARIANTE CHECK (
+        (PRO_PRODUCTO IS NOT NULL AND PVA_PRODUCTO_VARIANTE IS NULL) OR
+        (PRO_PRODUCTO IS NULL AND PVA_PRODUCTO_VARIANTE IS NOT NULL)
+    ),
+    CONSTRAINT CHK_VDE_CANTIDAD CHECK (VDE_CANTIDAD > 0),
+    CONSTRAINT CHK_VDE_MONTOS CHECK (
+        VDE_PRECIO_UNITARIO >= 0 AND 
+        VDE_DESCUENTO >= 0 AND 
+        VDE_IMPUESTO >= 0 AND 
+        VDE_SUBTOTAL >= 0 AND 
+        VDE_TOTAL >= 0
+    ),
+    CONSTRAINT CHK_VDE_ESTADO CHECK (VDE_ESTADO IN ('ACTIVO', 'CANCELADO', 'DEVUELTO'))
+);
+
+COMMENT ON TABLE ALP_ORDEN_VENTA_DETALLE IS 'Líneas de detalle de órdenes (ítems vendidos)';
+
+CREATE INDEX IDX_VDE_ORDEN ON ALP_ORDEN_VENTA_DETALLE(VEN_ORDEN_VENTA);
+CREATE INDEX IDX_VDE_PRODUCTO ON ALP_ORDEN_VENTA_DETALLE(PRO_PRODUCTO);
+CREATE INDEX IDX_VDE_VARIANTE ON ALP_ORDEN_VENTA_DETALLE(PVA_PRODUCTO_VARIANTE);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_ORDEN_VENTA_ESTADO_HISTORIAL
+-- Descripción: Historial de cambios de estado de órdenes
+-- Tracking completo del ciclo de vida
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_ORDEN_VENTA_ESTADO_HISTORIAL (
+    VEH_ORDEN_VENTA_ESTADO_HIST NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    ESO_ESTADO_ORDEN_ANTERIOR NUMBER,
+    ESO_ESTADO_ORDEN_NUEVO   NUMBER NOT NULL,
+    VEH_COMENTARIO           VARCHAR2(1000),
+    USU_USUARIO              NUMBER,
+    VEH_FECHA_CAMBIO         TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_VEH_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT FK_VEH_ESTADO_ANT FOREIGN KEY (ESO_ESTADO_ORDEN_ANTERIOR) 
+        REFERENCES ALP_ESTADO_ORDEN(ESO_ESTADO_ORDEN),
+    CONSTRAINT FK_VEH_ESTADO_NVO FOREIGN KEY (ESO_ESTADO_ORDEN_NUEVO) 
+        REFERENCES ALP_ESTADO_ORDEN(ESO_ESTADO_ORDEN),
+    CONSTRAINT FK_VEH_USUARIO FOREIGN KEY (USU_USUARIO) 
+        REFERENCES ALP_USUARIO(USU_USUARIO)
+);
+
+COMMENT ON TABLE ALP_ORDEN_VENTA_ESTADO_HISTORIAL IS 'Historial de estados de órdenes (tracking)';
+
+CREATE INDEX IDX_VEH_ORDEN ON ALP_ORDEN_VENTA_ESTADO_HISTORIAL(VEN_ORDEN_VENTA);
+CREATE INDEX IDX_VEH_FECHA ON ALP_ORDEN_VENTA_ESTADO_HISTORIAL(VEH_FECHA_CAMBIO);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_CORTE_CAJA
+-- Descripción: Cortes de caja (cierre diario)
+-- Conciliación de efectivo y ventas
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_CORTE_CAJA (
+    RCC_REPORTE_CORTE_CAJA   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    RCC_FECHA_CORTE          DATE NOT NULL,
+    RCC_MONTO_INICIAL        NUMBER(12,2) NOT NULL,
+    RCC_MONTO_FINAL          NUMBER(12,2) NOT NULL,
+    RCC_TOTAL_VENTAS         NUMBER(12,2) NOT NULL,
+    RCC_OBSERVACION          VARCHAR2(1000),
+    RCC_ESTADO               VARCHAR2(20) DEFAULT 'ABIERTO' NOT NULL,
+    
+    CONSTRAINT CHK_RCC_ESTADO CHECK (RCC_ESTADO IN ('ABIERTO', 'CERRADO', 'CONCILIADO')),
+    CONSTRAINT CHK_RCC_MONTOS CHECK (
+        RCC_MONTO_INICIAL >= 0 AND 
+        RCC_MONTO_FINAL >= 0 AND 
+        RCC_TOTAL_VENTAS >= 0
+    )
+);
+
+COMMENT ON TABLE ALP_CORTE_CAJA IS 'Cortes de caja diarios (POS)';
+
+CREATE INDEX IDX_RCC_FECHA ON ALP_CORTE_CAJA(RCC_FECHA_CORTE);
+CREATE INDEX IDX_RCC_ESTADO ON ALP_CORTE_CAJA(RCC_ESTADO);
+
+-- ============================================================================
+-- BLOQUE 9: PAGOS Y FACTURACIÓN
+-- ============================================================================
+-- Descripción: Gestión de pagos, transacciones y facturación
+-- Incluye: Pagos, intentos, comprobantes, facturas
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_ESTADO_PAGO
+-- Descripción: Estados de pagos
+-- Ejemplos: 'PENDIENTE', 'APROBADO', 'RECHAZADO', 'REEMBOLSADO'
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_ESTADO_PAGO (
+    ESP_ESTADO_PAGO          NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ESP_CODIGO               VARCHAR2(50) NOT NULL UNIQUE,
+    ESP_NOMBRE               VARCHAR2(100) NOT NULL,
+    ESP_DESCRIPCION          VARCHAR2(500),
+    ESP_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    ESP_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT CHK_ESP_ESTADO CHECK (ESP_ESTADO IN ('ACTIVO', 'INACTIVO'))
+);
+
+COMMENT ON TABLE ALP_ESTADO_PAGO IS 'Catálogo de estados de pago';
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_PAGO
+-- Descripción: Pagos recibidos
+-- CRÍTICO: Registro financiero de transacciones
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_PAGO (
+    PAG_PAGO                 NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    FPA_FORMA_PAGO           NUMBER NOT NULL,
+    PAG_NUMERO_TRANSACCION   VARCHAR2(100) UNIQUE,
+    PAG_MONTO                NUMBER(12,2) NOT NULL,
+    PAG_MONEDA               NUMBER NOT NULL,
+    PAG_REFERENCIA           VARCHAR2(200),
+    PAG_FECHA_PAGO           TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    ESP_ESTADO_PAGO          NUMBER NOT NULL,
+    PAG_OBSERVACIONES        VARCHAR2(1000),
+    
+    CONSTRAINT FK_PAG_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT FK_PAG_FORMA_PAGO FOREIGN KEY (FPA_FORMA_PAGO) 
+        REFERENCES ALP_FORMA_PAGO(FPA_FORMA_PAGO),
+    CONSTRAINT FK_PAG_MONEDA FOREIGN KEY (PAG_MONEDA) 
+        REFERENCES ALP_MONEDA(MON_MONEDA),
+    CONSTRAINT FK_PAG_ESTADO FOREIGN KEY (ESP_ESTADO_PAGO) 
+        REFERENCES ALP_ESTADO_PAGO(ESP_ESTADO_PAGO),
+    CONSTRAINT CHK_PAG_MONTO CHECK (PAG_MONTO > 0)
+);
+
+COMMENT ON TABLE ALP_PAGO IS 'Registro de pagos recibidos (transacciones financieras)';
+COMMENT ON COLUMN ALP_PAGO.PAG_NUMERO_TRANSACCION IS 'ID de transacción del gateway de pago';
+
+CREATE INDEX IDX_PAG_ORDEN ON ALP_PAGO(VEN_ORDEN_VENTA);
+CREATE INDEX IDX_PAG_ESTADO ON ALP_PAGO(ESP_ESTADO_PAGO);
+CREATE INDEX IDX_PAG_FECHA ON ALP_PAGO(PAG_FECHA_PAGO);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_PAGO_DETALLE
+-- Descripción: Detalle de aplicación de pagos
+-- Permite pagos parciales y múltiples pagos por orden
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_PAGO_DETALLE (
+    PDE_PAGO_DETALLE         NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    PAG_PAGO                 NUMBER NOT NULL,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    PDE_MONTO_APLICADO       NUMBER(12,2) NOT NULL,
+    PDE_FECHA_APLICACION     TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PDE_OBSERVACION          VARCHAR2(500),
+    PDE_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    
+    CONSTRAINT FK_PDE_PAGO FOREIGN KEY (PAG_PAGO) 
+        REFERENCES ALP_PAGO(PAG_PAGO),
+    CONSTRAINT FK_PDE_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT CHK_PDE_MONTO CHECK (PDE_MONTO_APLICADO > 0),
+    CONSTRAINT CHK_PDE_ESTADO CHECK (PDE_ESTADO IN ('ACTIVO', 'REVERSADO', 'CANCELADO'))
+);
+
+COMMENT ON TABLE ALP_PAGO_DETALLE IS 'Aplicación de pagos a órdenes (cobros parciales)';
+
+CREATE INDEX IDX_PDE_PAGO ON ALP_PAGO_DETALLE(PAG_PAGO);
+CREATE INDEX IDX_PDE_ORDEN ON ALP_PAGO_DETALLE(VEN_ORDEN_VENTA);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_INTENTO_PAGO
+-- Descripción: Log de intentos de pago (exitosos y fallidos)
+-- Debugging y análisis de tasas de conversión
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_INTENTO_PAGO (
+    IPA_INTENTO_PAGO         NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    FPA_FORMA_PAGO           NUMBER NOT NULL,
+    IPA_MONTO                NUMBER(12,2) NOT NULL,
+    IPA_RESULTADO            VARCHAR2(20) NOT NULL,
+    IPA_CODIGO_RESPUESTA     VARCHAR2(50),
+    IPA_MENSAJE              VARCHAR2(500),
+    IPA_FECHA_INTENTO        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_IPA_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT FK_IPA_FORMA_PAGO FOREIGN KEY (FPA_FORMA_PAGO) 
+        REFERENCES ALP_FORMA_PAGO(FPA_FORMA_PAGO),
+    CONSTRAINT CHK_IPA_RESULTADO CHECK (IPA_RESULTADO IN ('EXITOSO', 'FALLIDO', 'ERROR', 'CANCELADO')),
+    CONSTRAINT CHK_IPA_MONTO CHECK (IPA_MONTO > 0)
+);
+
+COMMENT ON TABLE ALP_INTENTO_PAGO IS 'Log de intentos de pago (análisis de fallas)';
+
+CREATE INDEX IDX_IPA_ORDEN ON ALP_INTENTO_PAGO(VEN_ORDEN_VENTA);
+CREATE INDEX IDX_IPA_RESULTADO ON ALP_INTENTO_PAGO(IPA_RESULTADO);
+CREATE INDEX IDX_IPA_FECHA ON ALP_INTENTO_PAGO(IPA_FECHA_INTENTO);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_COMPROBANTE
+-- Descripción: Comprobantes de pago emitidos
+-- Recibos, tickets
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_COMPROBANTE (
+    COM_COMPROBANTE          NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    PAG_PAGO                 NUMBER NOT NULL,
+    TCO_TIPO_COMPROBANTE     NUMBER NOT NULL,
+    COM_NUMERO               VARCHAR2(50) NOT NULL UNIQUE,
+    COM_SERIE                VARCHAR2(20),
+    COM_FECHA_EMISION        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    COM_MONTO                NUMBER(12,2) NOT NULL,
+    COM_OBSERVACIONES        VARCHAR2(1000),
+    
+    CONSTRAINT FK_COM_PAGO FOREIGN KEY (PAG_PAGO) 
+        REFERENCES ALP_PAGO(PAG_PAGO),
+    CONSTRAINT FK_COM_TIPO FOREIGN KEY (TCO_TIPO_COMPROBANTE) 
+        REFERENCES ALP_TIPO_COMPROBANTE(TCO_TIPO_COMPROBANTE),
+    CONSTRAINT CHK_COM_MONTO CHECK (COM_MONTO >= 0)
+);
+
+COMMENT ON TABLE ALP_COMPROBANTE IS 'Comprobantes de pago (recibos, tickets)';
+
+CREATE INDEX IDX_COM_PAGO ON ALP_COMPROBANTE(PAG_PAGO);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_FACTURA
+-- Descripción: Facturas fiscales
+-- Documentos tributarios oficiales
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_FACTURA (
+    FAC_FACTURA              NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    CLI_CLIENTE              NUMBER NOT NULL,
+    FAC_NUMERO               VARCHAR2(50) NOT NULL UNIQUE,
+    FAC_SERIE                VARCHAR2(20),
+    FAC_FECHA_EMISION        TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FAC_SUBTOTAL             NUMBER(12,2) NOT NULL,
+    FAC_IMPUESTOS            NUMBER(12,2) NOT NULL,
+    FAC_TOTAL                NUMBER(12,2) NOT NULL,
+    FAC_ESTADO               VARCHAR2(20) DEFAULT 'EMITIDA' NOT NULL,
+    
+    CONSTRAINT FK_FAC_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT FK_FAC_CLIENTE FOREIGN KEY (CLI_CLIENTE) 
+        REFERENCES ALP_CLIENTE(CLI_CLIENTE),
+    CONSTRAINT CHK_FAC_ESTADO CHECK (FAC_ESTADO IN ('EMITIDA', 'ANULADA', 'CANCELADA')),
+    CONSTRAINT CHK_FAC_MONTOS CHECK (
+        FAC_SUBTOTAL >= 0 AND 
+        FAC_IMPUESTOS >= 0 AND 
+        FAC_TOTAL >= 0
+    )
+);
+
+COMMENT ON TABLE ALP_FACTURA IS 'Facturas fiscales (DTE Guatemala)';
+
+CREATE INDEX IDX_FAC_ORDEN ON ALP_FACTURA(VEN_ORDEN_VENTA);
+CREATE INDEX IDX_FAC_CLIENTE ON ALP_FACTURA(CLI_CLIENTE);
+CREATE INDEX IDX_FAC_FECHA ON ALP_FACTURA(FAC_FECHA_EMISION);
+
+-- ============================================================================
+-- BLOQUE 10: DEVOLUCIONES Y ENVÍOS
+-- ============================================================================
+-- Descripción: Gestión de devoluciones y logística de envíos
+-- Incluye: Categorías de devolución, devoluciones, envíos, reportes
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_CATEGORIA_TIPO_DEVOLUCION
+-- Descripción: Categorías de motivos de devolución
+-- Ejemplos: 'DEFECTO_FABRICA', 'PRODUCTO_INCORRECTO', 'ARREPENTIMIENTO'
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_CATEGORIA_TIPO_DEVOLUCION (
+    CTD_CATEGORIA_TIPO_DEV   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    CTD_CODIGO               VARCHAR2(50) NOT NULL UNIQUE,
+    CTD_NOMBRE               VARCHAR2(150) NOT NULL,
+    CTD_DESCRIPCION          VARCHAR2(500),
+    CTD_ESTADO               VARCHAR2(20) DEFAULT 'ACTIVO' NOT NULL,
+    
+    CONSTRAINT CHK_CTD_ESTADO CHECK (CTD_ESTADO IN ('ACTIVO', 'INACTIVO'))
+);
+
+COMMENT ON TABLE ALP_CATEGORIA_TIPO_DEVOLUCION IS 'Categorías de motivos de devolución';
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_DEVOLUCION
+-- Descripción: Devoluciones de productos
+-- RMA (Return Merchandise Authorization)
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_DEVOLUCION (
+    DEV_DEVOLUCION           NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    CLI_CLIENTE              NUMBER NOT NULL,
+    CTD_CATEGORIA_TIPO_DEV   NUMBER NOT NULL,
+    DEV_NUMERO_RMA           VARCHAR2(50) NOT NULL UNIQUE,
+    DEV_MOTIVO               VARCHAR2(1000) NOT NULL,
+    DEV_MONTO_TOTAL          NUMBER(12,2) NOT NULL,
+    DEV_ESTADO               VARCHAR2(20) DEFAULT 'SOLICITADA' NOT NULL,
+    DEV_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_DEV_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT FK_DEV_CLIENTE FOREIGN KEY (CLI_CLIENTE) 
+        REFERENCES ALP_CLIENTE(CLI_CLIENTE),
+    CONSTRAINT FK_DEV_CATEGORIA FOREIGN KEY (CTD_CATEGORIA_TIPO_DEV) 
+        REFERENCES ALP_CATEGORIA_TIPO_DEVOLUCION(CTD_CATEGORIA_TIPO_DEV),
+    CONSTRAINT CHK_DEV_ESTADO CHECK (DEV_ESTADO IN ('SOLICITADA', 'EN_REVISION', 'APROBADA', 'RECHAZADA', 'COMPLETADA')),
+    CONSTRAINT CHK_DEV_MONTO CHECK (DEV_MONTO_TOTAL > 0)
+);
+
+COMMENT ON TABLE ALP_DEVOLUCION IS 'Devoluciones de productos (RMA)';
+COMMENT ON COLUMN ALP_DEVOLUCION.DEV_NUMERO_RMA IS 'Número de autorización de devolución';
+
+CREATE INDEX IDX_DEV_ORDEN ON ALP_DEVOLUCION(VEN_ORDEN_VENTA);
+CREATE INDEX IDX_DEV_CLIENTE ON ALP_DEVOLUCION(CLI_CLIENTE);
+CREATE INDEX IDX_DEV_ESTADO ON ALP_DEVOLUCION(DEV_ESTADO);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_DEVOLUCION_DETALLE
+-- Descripción: Detalle de items devueltos
+-- Productos y cantidades específicas
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_DEVOLUCION_DETALLE (
+    DDE_DEVOLUCION_DETALLE   NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    DEV_DEVOLUCION           NUMBER NOT NULL,
+    VDE_ORDEN_VENTA_DETALLE  NUMBER NOT NULL,
+    DDE_CANTIDAD             NUMBER(12,2) NOT NULL,
+    DDE_MONTO                NUMBER(12,2) NOT NULL,
+    DDE_ESTADO               VARCHAR2(20) DEFAULT 'PENDIENTE' NOT NULL,
+    DDE_FECHA_CREACION       TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    
+    CONSTRAINT FK_DDE_DEVOLUCION FOREIGN KEY (DEV_DEVOLUCION) 
+        REFERENCES ALP_DEVOLUCION(DEV_DEVOLUCION),
+    CONSTRAINT FK_DDE_ORDEN_DETALLE FOREIGN KEY (VDE_ORDEN_VENTA_DETALLE) 
+        REFERENCES ALP_ORDEN_VENTA_DETALLE(VDE_ORDEN_VENTA_DETALLE),
+    CONSTRAINT CHK_DDE_CANTIDAD CHECK (DDE_CANTIDAD > 0),
+    CONSTRAINT CHK_DDE_MONTO CHECK (DDE_MONTO > 0),
+    CONSTRAINT CHK_DDE_ESTADO CHECK (DDE_ESTADO IN ('PENDIENTE', 'RECIBIDO', 'INSPECCIONADO', 'REINTEGRADO'))
+);
+
+COMMENT ON TABLE ALP_DEVOLUCION_DETALLE IS 'Detalle de productos devueltos';
+
+CREATE INDEX IDX_DDE_DEVOLUCION ON ALP_DEVOLUCION_DETALLE(DEV_DEVOLUCION);
+CREATE INDEX IDX_DDE_ORDEN_DETALLE ON ALP_DEVOLUCION_DETALLE(VDE_ORDEN_VENTA_DETALLE);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_ENVIO
+-- Descripción: Envíos de órdenes
+-- Tracking de logística y entrega
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_ENVIO (
+    ENV_ENVIO                NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    VEN_ORDEN_VENTA          NUMBER NOT NULL,
+    CLD_CLIENTE_DIRECCION    NUMBER NOT NULL,
+    ENV_NUMERO_GUIA          VARCHAR2(100) UNIQUE,
+    ENV_TRANSPORTISTA        VARCHAR2(150),
+    ENV_COSTO_ENVIO          NUMBER(12,2),
+    ENV_FECHA_ENVIO          TIMESTAMP,
+    ENV_FECHA_ENTREGA_ESTIMADA DATE,
+    ENV_FECHA_ENTREGA_REAL   TIMESTAMP,
+    ENV_ESTADO               VARCHAR2(20) DEFAULT 'PREPARANDO' NOT NULL,
+    ENV_OBSERVACIONES        VARCHAR2(1000),
+    
+    CONSTRAINT FK_ENV_ORDEN FOREIGN KEY (VEN_ORDEN_VENTA) 
+        REFERENCES ALP_ORDEN_VENTA(VEN_ORDEN_VENTA),
+    CONSTRAINT FK_ENV_DIRECCION FOREIGN KEY (CLD_CLIENTE_DIRECCION) 
+        REFERENCES ALP_CLIENTE_DIRECCION(CLD_CLIENTE_DIRECCION),
+    CONSTRAINT CHK_ENV_ESTADO CHECK (ENV_ESTADO IN ('PREPARANDO', 'EN_TRANSITO', 'EN_REPARTO', 'ENTREGADO', 'FALLIDO')),
+    CONSTRAINT CHK_ENV_COSTO CHECK (ENV_COSTO_ENVIO IS NULL OR ENV_COSTO_ENVIO >= 0)
+);
+
+COMMENT ON TABLE ALP_ENVIO IS 'Gestión de envíos y tracking';
+COMMENT ON COLUMN ALP_ENVIO.ENV_NUMERO_GUIA IS 'Número de guía de la transportista';
+
+CREATE INDEX IDX_ENV_ORDEN ON ALP_ENVIO(VEN_ORDEN_VENTA);
+CREATE INDEX IDX_ENV_ESTADO ON ALP_ENVIO(ENV_ESTADO);
+
+-- ----------------------------------------------------------------------------
+-- Tabla: ALP_EJECUCION_REPORTE
+-- Descripción: Log de ejecución de reportes
+-- Auditoría de reportes generados
+-- ----------------------------------------------------------------------------
+CREATE TABLE ALP_EJECUCION_REPORTE (
+    EJR_EJECUCION_REPORTE    NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    USU_USUARIO              NUMBER,
+    EJR_NOMBRE_REPORTE       VARCHAR2(255) NOT NULL,
+    EJR_PARAMETROS           CLOB,
+    EJR_FECHA_EJECUCION      TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    EJR_TIEMPO_EJECUCION_MS  NUMBER(10),
+    EJR_ESTADO               VARCHAR2(20) DEFAULT 'EXITOSO' NOT NULL,
+    
+    CONSTRAINT FK_EJR_USUARIO FOREIGN KEY (USU_USUARIO) 
+        REFERENCES ALP_USUARIO(USU_USUARIO),
+    CONSTRAINT CHK_EJR_ESTADO CHECK (EJR_ESTADO IN ('EXITOSO', 'ERROR', 'CANCELADO'))
+);
+
+COMMENT ON TABLE ALP_EJECUCION_REPORTE IS 'Log de ejecución de reportes (auditoría BI)';
+
+CREATE INDEX IDX_EJR_USUARIO ON ALP_EJECUCION_REPORTE(USU_USUARIO);
+CREATE INDEX IDX_EJR_FECHA ON ALP_EJECUCION_REPORTE(EJR_FECHA_EJECUCION);
+
+-- ============================================================================
+-- FIN BLOQUES 8, 9 Y 10 - VENTAS, PAGOS Y DEVOLUCIONES
+-- ============================================================================
+-- SCRIPT COMPLETO FINALIZADO
+-- ============================================================================
+
+SELECT 'TODOS LOS BLOQUES COMPLETADOS - Base de Datos MUEBLES LOS ALPES' AS ESTADO FROM DUAL;
