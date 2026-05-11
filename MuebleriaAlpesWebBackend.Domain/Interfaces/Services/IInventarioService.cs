@@ -4,7 +4,7 @@ using MuebleriaAlpesWebBackend.Domain.Models;
 
 namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
 {
-    public interface IProductoService
+    public interface IProductoInventarioService
     {
         Task<InventarioResponse<int?>> CrearProductoAsync(CrearProductoRequest request);
         Task<ProductoDTO?> ObtenerProductoPorIdAsync(int productoId);

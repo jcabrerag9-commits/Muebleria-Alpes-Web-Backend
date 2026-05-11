@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Business.Services;
 using MuebleriaAlpesWebBackend.Business.Services.RecursosHumanos;
-using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Data.Repositories;
 using MuebleriaAlpesWebBackend.Data.Repositories.RecursosHumanos;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories;
@@ -21,7 +20,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<OracleConnectionFactory>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
-builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IVarianteRepository, VarianteRepository>();
 builder.Services.AddScoped<IContenidoRepository, ContenidoRepository>();
 builder.Services.AddScoped<IPrecioRepository, PrecioRepository>();
@@ -33,13 +31,19 @@ builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IFacturacionRepository, FacturacionRepository>();
 builder.Services.AddScoped<IFacturacionService, FacturacionService>();
+
+// Productos (Genéricos)
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
+
+// Productos (Inventario)
+builder.Services.AddScoped<IProductoInventarioRepository, ProductoInventarioRepository>();
+builder.Services.AddScoped<IProductoInventarioService, ProductoInventarioService>();
+
 builder.Services.AddScoped<IInventarioRepository, InventarioRepository>();
 builder.Services.AddScoped<IInventarioService, InventarioService>();
 builder.Services.AddScoped<IProductoImagenRepository, ProductoImagenRepository>();
 builder.Services.AddScoped<IProductoImagenService, ProductoImagenService>();
-builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IVarianteService, VarianteService>();
 builder.Services.AddScoped<IContenidoService, ContenidoService>();
 builder.Services.AddScoped<IPrecioService, PrecioService>();

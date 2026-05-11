@@ -9,11 +9,11 @@ using MuebleriaAlpesWebBackend.Domain.Models;
 
 namespace MuebleriaAlpesWebBackend.Data.Repositories
 {
-    public class ProductoRepository : IProductoRepository
+    public class ProductoInventarioRepository : IProductoInventarioRepository
     {
         private readonly OracleConnectionFactory _connectionFactory;
 
-        public ProductoRepository(OracleConnectionFactory connectionFactory)
+        public ProductoInventarioRepository(OracleConnectionFactory connectionFactory)
         {
             _connectionFactory = connectionFactory;
         }

@@ -7,12 +7,12 @@ using MuebleriaAlpesWebBackend.Data.Connection;
 
 namespace MuebleriaAlpesWebBackend.Business.Services
 {
-    public class ProductoService : IProductoService
+    public class ProductoInventarioService : IProductoInventarioService
     {
-        private readonly IProductoRepository _productoRepository;
+        private readonly IProductoInventarioRepository _productoRepository;
         private readonly OracleConnectionFactory _connectionFactory;
 
-        public ProductoService(IProductoRepository productoRepository, OracleConnectionFactory connectionFactory)
+        public ProductoInventarioService(IProductoInventarioRepository productoRepository, OracleConnectionFactory connectionFactory)
         {
             _productoRepository = productoRepository;
             _connectionFactory = connectionFactory;

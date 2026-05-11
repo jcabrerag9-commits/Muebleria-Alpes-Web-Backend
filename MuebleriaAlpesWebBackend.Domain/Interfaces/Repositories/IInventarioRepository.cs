@@ -5,7 +5,7 @@ using MuebleriaAlpesWebBackend.Domain.Models;
 
 namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories
 {
-    public interface IProductoRepository
+    public interface IProductoInventarioRepository
     {
         Task<InventarioResponse<int?>> CrearProductoAsync(CrearProductoRequest request, IDbTransaction? transaction = null);
         Task<InventarioResponse<bool>> ActualizarProductoAsync(int productoId, object request, IDbTransaction? transaction = null);
