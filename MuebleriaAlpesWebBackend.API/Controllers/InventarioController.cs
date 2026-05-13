@@ -10,9 +10,9 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
     [Route("api/[controller]")]
     public class ProductoController : ControllerBase
     {
-        private readonly IProductoService _productoService;
+        private readonly IProductoInventarioService _productoService;
 
-        public ProductoController(IProductoService productoService)
+        public ProductoController(IProductoInventarioService productoService)
         {
             _productoService = productoService;
         }
