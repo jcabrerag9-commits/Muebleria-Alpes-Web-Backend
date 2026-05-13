@@ -52,8 +52,16 @@ namespace MuebleriaAlpesWebBackend.Business.Services
         {
             if (string.IsNullOrWhiteSpace(motivo))
                 throw new ArgumentException("Debe proporcionar un motivo para el cambio de estado.");
-            
+
             await _clienteRepository.CambiarEstadoAsync(clienteId, nuevoEstado, motivo, usuarioId);
+        }
+
+        public async Task EliminarLogicoAsync(int clienteId, string motivo, int? usuarioId)
+        {
+            if (string.IsNullOrWhiteSpace(motivo))
+                motivo = "Eliminación desde sistema web";
+
+            await _clienteRepository.EliminarLogicoAsync(clienteId, motivo, usuarioId);
         }
     }
 }

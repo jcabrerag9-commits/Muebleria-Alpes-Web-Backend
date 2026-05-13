@@ -36,6 +36,18 @@ builder.Services.AddScoped<IFacturacionService, FacturacionService>();
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 
+// Categorías
+builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+builder.Services.AddScoped<ICategoriaService, CategoriaService>();
+
+// Colores
+builder.Services.AddScoped<IColorRepository, ColorRepository>();
+builder.Services.AddScoped<IColorService, ColorService>();
+
+// Materiales
+builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+
 // Productos (Inventario)
 builder.Services.AddScoped<IProductoInventarioRepository, ProductoInventarioRepository>();
 builder.Services.AddScoped<IProductoInventarioService, ProductoInventarioService>();
@@ -71,6 +83,10 @@ builder.Services.AddScoped<IBannerService, BannerService>();
 // ── Devoluciones ──────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IDevolucionRepository, DevolucionRepository>();
 builder.Services.AddScoped<IDevolucionService, DevolucionService>();
+
+// ── Autenticación ─────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddCors(options =>
 {

@@ -75,6 +75,20 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             await _clienteService.ChangeStatusAsync(id, estado, motivo, usuarioId);
             return NoContent();
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                await _clienteService.EliminarLogicoAsync(id, "Eliminación desde sistema web", null);
+                return Ok(new { mensaje = "Cliente eliminado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { mensaje = ex.Message });
+            }
+        }
     }
 
 }
