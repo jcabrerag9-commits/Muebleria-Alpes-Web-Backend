@@ -38,7 +38,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             p.Add("p_permite_venta", bodega.PermiteVenta);
             p.Add("p_maneja_despacho", bodega.ManejaDespacho);
             p.Add("p_usuario", usuarioId);
-            p.Add("p_id_nuevo", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+            p.Add("p_id_nuevo", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
             try
             {
@@ -119,7 +119,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_bodega_id", bodegaId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[BODEGA REPOS] Obteniendo bodega {BodegaId}...", bodegaId);
@@ -151,7 +151,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_solo_activas", soloActivas ? 1 : 0);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[BODEGA REPOS] Listando bodegas (Solo activas: {SoloActivas})...", soloActivas);

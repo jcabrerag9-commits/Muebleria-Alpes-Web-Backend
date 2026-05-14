@@ -32,9 +32,9 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_pago_id", request.PagoId);
             parameters.Add("p_usuario_id", request.UsuarioId);
             
-            parameters.Add("p_factura_id", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
-            parameters.Add("p_resultado", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 50);
-            parameters.Add("p_mensaje", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 4000);
+            parameters.Add("p_factura_id", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_resultado", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 4000);
 
             try
             {
@@ -73,8 +73,8 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_motivo", request.Motivo);
             parameters.Add("p_usuario_id", request.UsuarioId);
 
-            parameters.Add("p_resultado", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 50);
-            parameters.Add("p_mensaje", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 4000);
+            parameters.Add("p_resultado", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 4000);
 
             try
             {
@@ -103,7 +103,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             var parameters = new OracleDynamicParameters();
             parameters.Add("p_factura_id", facturaId);
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
             using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryFirstOrDefaultAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_OBTENER_FACTURA", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
@@ -114,7 +114,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             var parameters = new OracleDynamicParameters();
             parameters.Add("p_cliente_id", clienteId);
             parameters.Add("p_estado", null);
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
             using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_LISTAR_FACTURAS_CLIENTE", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
@@ -126,7 +126,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_estado", estado);
             parameters.Add("p_cliente_id", clienteId);
             parameters.Add("p_nit", nit);
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
             
             using var connection = _connectionFactory.CreateConnection();
             return await connection.QueryAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_LISTAR_TODAS_FACTURAS", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
@@ -143,7 +143,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             var parameters = new OracleDynamicParameters();
             parameters.Add("p_factura_id", facturaId);
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
             using var connection = _connectionFactory.CreateConnection();
             var factura = await connection.QueryFirstOrDefaultAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_OBTENER_DETALLE_FACTURA", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
@@ -152,7 +152,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var itemsParams = new OracleDynamicParameters();
                 itemsParams.Add("p_factura_id", facturaId);
-                itemsParams.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                itemsParams.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
                 
                 var items = await connection.QueryAsync<FacturaDetalleDTO>(new CommandDefinition("PKG_FACTURACION.SP_OBTENER_ITEMS_FACTURA", itemsParams, commandType: CommandType.StoredProcedure, cancellationToken: ct));
                 factura.Detalles = items.AsList();
@@ -165,7 +165,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         public async Task<IEnumerable<OrdenPendienteDTO>> ObtenerOrdenesPendientesAsync(CancellationToken ct = default)
         {
             var parameters = new OracleDynamicParameters();
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
             using var connection = _connectionFactory.CreateConnection();
             var data = await connection.QueryAsync<OrdenPendienteDTO>(new CommandDefinition("PKG_FACTURACION.SP_LISTAR_ORDENES_FACTURABLES", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));

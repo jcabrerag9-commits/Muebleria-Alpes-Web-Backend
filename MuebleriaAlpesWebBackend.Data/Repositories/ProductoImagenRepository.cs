@@ -28,14 +28,14 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
             var p = new OracleDynamicParameters();
             p.Add("p_pro_producto", productoId);
-            p.Add("p_pim_archivo", archivo, dbType: OracleMappingType.Blob);
+            p.Add("p_pim_archivo", archivo, dbType: OracleDbType.Blob);
             p.Add("p_pim_nombre", nombre);
             p.Add("p_pim_content_type", contentType);
             p.Add("p_pim_tamanio", tamanio);
             p.Add("p_pim_url", string.IsNullOrWhiteSpace(url) ? "LOCAL_BLOB" : url);
             p.Add("p_pim_tipo", tipo);
             p.Add("p_pim_orden", orden);
-            p.Add("p_id_generado", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+            p.Add("p_id_generado", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = transaction?.Connection == null ? _connectionFactory.CreateConnection() : null;
             var activeConnection = transaction?.Connection ?? connection!;
@@ -53,7 +53,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_pim_id", imagenId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[IMAGEN REPOS] Obteniendo binario de imagen {ImagenId}...", imagenId);
@@ -90,7 +90,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_pro_producto", productoId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[IMAGEN REPOS] Listando imágenes para producto {ProductoId}...", productoId);
@@ -119,7 +119,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_producto_id", productoId);
-                p.Add("p_imagen_id", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+                p.Add("p_imagen_id", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[IMAGEN REPOS] Buscando imagen principal para producto {ProductoId}...", productoId);
@@ -149,7 +149,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
             var p = new OracleDynamicParameters();
             p.Add("p_pim_id", imagenId);
-            p.Add("p_filas_afect", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+            p.Add("p_filas_afect", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
             using var connection = transaction?.Connection == null ? _connectionFactory.CreateConnection() : null;
             var activeConnection = transaction?.Connection ?? connection!;

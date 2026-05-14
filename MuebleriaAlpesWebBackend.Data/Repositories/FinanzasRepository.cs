@@ -34,7 +34,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_factura_id", request.FacturaId);
             parameters.Add("p_cliente_id", request.ClienteId);
             parameters.Add("p_usuario_id", request.UsuarioId);
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
             try
             {

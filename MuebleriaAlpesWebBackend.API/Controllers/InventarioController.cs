@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace MuebleriaAlpesWebBackend.API.Controllers
 {
+/*
     [ApiController]
     [Route("api/[controller]")]
     public class ProductoController : ControllerBase
@@ -84,6 +85,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             return Ok(response);
         }
     }
+*/
 
     [ApiController]
     [Route("api/[controller]")]

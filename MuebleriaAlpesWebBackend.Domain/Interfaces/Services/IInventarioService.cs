@@ -4,15 +4,6 @@ using MuebleriaAlpesWebBackend.Domain.Models;
 
 namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
 {
-    public interface IProductoService
-    {
-        Task<InventarioResponse<int?>> CrearProductoAsync(CrearProductoRequest request);
-        Task<ProductoDTO?> ObtenerProductoPorIdAsync(int productoId);
-        Task<IEnumerable<ProductoDTO>> ObtenerTodosAsync();
-        Task<InventarioResponse<bool>> ActualizarProductoAsync(int productoId, ActualizarProductoRequest request);
-        Task<InventarioResponse<int?>> CrearVarianteAsync(CrearVarianteRequest request);
-    }
-
     public interface IInventarioService
     {
         Task<InventarioResponse<int?>> RegistrarEntradaAsync(MovimientoInventarioRequest request);

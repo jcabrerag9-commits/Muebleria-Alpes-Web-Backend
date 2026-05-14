@@ -60,10 +60,10 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_referencia", request.Referencia);
             parameters.Add("p_usuario_id", request.UsuarioId ?? 999);
             
-            parameters.Add("p_pago_id", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
-            parameters.Add("p_factura_id", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
-            parameters.Add("p_resultado", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 50);
-            parameters.Add("p_mensaje", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 4000);
+            parameters.Add("p_pago_id", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_factura_id", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_resultado", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 4000);
 
             _logger.LogInformation("[PAGO ORDEN] {OrdenId}", request.OrdenId);
             _logger.LogInformation("[PAGO FACTURA] {FacturaId}", request.FacturaId);
@@ -124,7 +124,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new OracleDynamicParameters();
             parameters.Add("p_pago_id", id);
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
             
             var data = await connection.QueryFirstOrDefaultAsync<PagoDTO>(new CommandDefinition("SP_OBTENER_PAGO", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
             _logger.LogInformation("[PAGO RAW DB] ID={Id} Data={@Data}", id, data);
@@ -135,7 +135,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new OracleDynamicParameters();
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
             
             var data = await connection.QueryAsync<PagoDTO>(new CommandDefinition("SP_LISTAR_PAGOS", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
             _logger.LogInformation("[PAGOS LISTADO RAW DB] Count={Count}", data.AsList().Count);
@@ -147,7 +147,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new OracleDynamicParameters();
             parameters.Add("p_factura_id", facturaId);
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
             
             var data = await connection.QueryAsync<PagoDTO>(new CommandDefinition("SP_LISTAR_PAGOS_FACTURA", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
             _logger.LogInformation("[PAGOS FACTURA RAW DB] FacturaId={FacturaId} Count={Count}", facturaId, data.AsList().Count);
@@ -163,8 +163,8 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_pago_id", id);
             parameters.Add("p_motivo", motivo);
             parameters.Add("p_usuario_id", usuarioId);
-            parameters.Add("p_resultado", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 50);
-            parameters.Add("p_mensaje", dbType: OracleMappingType.Varchar2, direction: ParameterDirection.Output, size: 4000);
+            parameters.Add("p_resultado", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 4000);
 
             try
             {
@@ -212,7 +212,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
         {
             using var connection = _connectionFactory.CreateConnection();
             var parameters = new OracleDynamicParameters();
-            parameters.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
             
             var data = await connection.QueryAsync<OrdenPendientePagoDTO>(new CommandDefinition("PKG_FACTURACION.SP_OBTENER_ORDENES_PENDIENTES_PAGO", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
             

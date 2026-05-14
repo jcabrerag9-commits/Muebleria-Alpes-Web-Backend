@@ -36,7 +36,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             p.Add("p_costo_unitario", request.CostoUnitario);
             p.Add("p_observacion", request.Observacion);
             p.Add("p_usuario", request.UsuarioId);
-            p.Add("p_id_nuevo", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+            p.Add("p_id_nuevo", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
             try
             {
@@ -72,7 +72,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             p.Add("p_orden_venta", request.OrdenVentaId);
             p.Add("p_observacion", request.Observacion);
             p.Add("p_usuario", request.UsuarioId);
-            p.Add("p_id_nuevo", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+            p.Add("p_id_nuevo", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
             try
             {
@@ -110,7 +110,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             p.Add("p_expiracion", request.Expiracion);
             p.Add("p_usuario", request.UsuarioId);
             p.Add("p_orden_venta", null);
-            p.Add("p_id_nuevo", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+            p.Add("p_id_nuevo", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
             try
             {
@@ -167,7 +167,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_producto_id", productoId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[INV REPOS] Consultando existencias para producto {ProductoId}...", productoId);
@@ -202,7 +202,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             p.Add("p_cantidad_nueva", request.CantidadNueva);
             p.Add("p_motivo", request.Motivo);
             p.Add("p_usuario", request.UsuarioId);
-            p.Add("p_id_nuevo", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+            p.Add("p_id_nuevo", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
 
             try
             {
@@ -229,7 +229,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_producto_id", productoId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[INV REPOS] Consultando reservas para producto {ProductoId}...", productoId);
@@ -258,7 +258,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_reserva_id", reservaId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[INV REPOS] Obteniendo reserva {ReservaId}...", reservaId);
@@ -290,7 +290,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_producto_id", productoId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[INV REPOS] Consultando Kardex para producto {ProductoId}...", productoId);
@@ -326,7 +326,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                 p.Add("p_fecha_hasta", filtro.FechaHasta);
                 p.Add("p_orden_venta", filtro.OrdenVentaId);
                 p.Add("p_tipo_nombre", filtro.TipoMovimiento);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+                p.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
                 using var connection = _connectionFactory.CreateConnection();
                 _logger.LogInformation("[INV REPOS] Consultando movimientos globales...");
