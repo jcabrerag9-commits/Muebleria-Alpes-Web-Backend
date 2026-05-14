@@ -1,179 +1,164 @@
-using Oracle.ManagedDataAccess.Client;
-using System.Data;
+using Dapper;
+using Microsoft.Extensions.Logging;
 using MuebleriaAlpesWebBackend.Data.Connection;
+using MuebleriaAlpesWebBackend.Data.Repositories.Base;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories;
 using MuebleriaAlpesWebBackend.Domain.Models;
+using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Threading;
 using System.Threading.Tasks;
-using Dapper;
 
 namespace MuebleriaAlpesWebBackend.Data.Repositories
 {
-    public class ProductoImagenRepository : IProductoImagenRepository
+    public class ProductoImagenRepository : BaseRepository<ProductoImagenRepository>, IProductoImagenRepository
     {
         private readonly OracleConnectionFactory _connectionFactory;
 
-        public ProductoImagenRepository(OracleConnectionFactory connectionFactory)
+        public ProductoImagenRepository(OracleConnectionFactory connectionFactory, ILogger<ProductoImagenRepository> logger) : base(logger)
         {
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<int> SubirImagenAsync(int productoId, byte[] archivo, string nombre, string contentType, long tamanio, string? url, string? tipo, int orden, IDbTransaction? transaction = null)
+        public async Task<int> SubirImagenAsync(int productoId, byte[] archivo, string nombre, string contentType, long tamanio, string? url, string? tipo, int orden, IDbTransaction? transaction = null, CancellationToken ct = default)
         {
+            LogOperacionInicio(nameof(SubirImagenAsync), new { productoId, nombre, contentType });
+
+            var p = new OracleDynamicParameters();
+            p.Add("p_pro_producto", productoId);
+            p.Add("p_pim_archivo", archivo, dbType: OracleMappingType.Blob);
+            p.Add("p_pim_nombre", nombre);
+            p.Add("p_pim_content_type", contentType);
+            p.Add("p_pim_tamanio", tamanio);
+            p.Add("p_pim_url", string.IsNullOrWhiteSpace(url) ? "LOCAL_BLOB" : url);
+            p.Add("p_pim_tipo", tipo);
+            p.Add("p_pim_orden", orden);
+            p.Add("p_id_generado", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+
             using var connection = transaction?.Connection == null ? _connectionFactory.CreateConnection() : null;
             var activeConnection = transaction?.Connection ?? connection!;
             
-            if (activeConnection.State != ConnectionState.Open) activeConnection.Open();
-
-            using var command = (OracleCommand)activeConnection.CreateCommand();
-            command.CommandText = "PKG_PRODUCTO_IMAGEN.sp_subir_imagen_producto";
-            command.CommandType = CommandType.StoredProcedure;
-            if (transaction != null) command.Transaction = (OracleTransaction)transaction;
-
-            command.Parameters.Add("p_pro_producto", OracleDbType.Int32).Value = productoId;
-            command.Parameters.Add("p_pim_archivo", OracleDbType.Blob).Value = archivo;
-            command.Parameters.Add("p_pim_nombre", OracleDbType.Varchar2).Value = nombre;
-            command.Parameters.Add("p_pim_content_type", OracleDbType.Varchar2).Value = contentType;
-            command.Parameters.Add("p_pim_tamanio", OracleDbType.Int64).Value = tamanio;
-            command.Parameters.Add("p_pim_url", OracleDbType.Varchar2).Value = (object?)url ?? DBNull.Value;
-            command.Parameters.Add("p_pim_tipo", OracleDbType.Varchar2).Value = (object?)tipo ?? DBNull.Value;
-            command.Parameters.Add("p_pim_orden", OracleDbType.Int32).Value = orden;
+            await activeConnection.ExecuteAsync(new CommandDefinition("PKG_PRODUCTO_IMAGEN.sp_subir_imagen_producto", p, transaction: transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+            int id = p.Get<int>("p_id_generado");
             
-            var pIdGenerado = new OracleParameter("p_id_generado", OracleDbType.Int32, ParameterDirection.Output);
-            command.Parameters.Add(pIdGenerado);
-
-            command.ExecuteNonQuery();
-
-            return Convert.ToInt32(pIdGenerado.Value.ToString());
+            LogOperacionExito(nameof(SubirImagenAsync), id);
+            return id;
         }
 
-        public async Task<ProductoImagenDTO?> ObtenerImagenAsync(int imagenId)
+        public async Task<ProductoImagenDTO?> ObtenerImagenAsync(int imagenId, CancellationToken ct = default)
         {
-            using var connection = _connectionFactory.CreateConnection();
-            if (connection.State != ConnectionState.Open) connection.Open();
-
-            using var command = (OracleCommand)connection.CreateCommand();
-            command.CommandText = "PKG_PRODUCTO_IMAGEN.sp_obtener_imagen_producto";
-            command.CommandType = CommandType.StoredProcedure;
-
-            command.Parameters.Add("p_pim_id", OracleDbType.Int32).Value = imagenId;
-            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-            using var reader = command.ExecuteReader(CommandBehavior.CloseConnection);
-            if (reader.Read())
+            try 
             {
-                var dto = new ProductoImagenDTO
-                {
-                    ImagenId = imagenId,
-                    ContentType = reader.GetString(reader.GetOrdinal("PIM_CONTENT_TYPE")),
-                    NombreArchivo = reader.GetString(reader.GetOrdinal("PIM_NOMBRE_ARCHIVO")),
-                    Tamanio = Convert.ToInt64(reader.GetValue(reader.GetOrdinal("PIM_TAMANIO"))),
-                    ProductoId = reader.GetInt32(reader.GetOrdinal("PRO_PRODUCTO")),
-                    // PIM_TIPO no viene en sp_obtener_imagen_producto para optimizar streaming
-                };
+                var p = new OracleDynamicParameters();
+                p.Add("p_pim_id", imagenId);
+                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
 
-                int blobOrdinal = reader.GetOrdinal("PIM_ARCHIVO");
-                if (!reader.IsDBNull(blobOrdinal))
+                using var connection = _connectionFactory.CreateConnection();
+                _logger.LogInformation("[IMAGEN REPOS] Obteniendo binario de imagen {ImagenId}...", imagenId);
+
+                var img = await connection.QueryFirstOrDefaultAsync<ProductoImagenDTO>(new CommandDefinition(
+                    "PKG_PRODUCTO_IMAGEN.sp_obtener_imagen_producto",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    cancellationToken: ct
+                ));
+
+                if (img != null)
                 {
-                    long length = reader.GetBytes(blobOrdinal, 0, null, 0, 0);
-                    byte[] buffer = new byte[length];
-                    reader.GetBytes(blobOrdinal, 0, buffer, 0, (int)length);
-                    dto.Archivo = buffer;
+                    _logger.LogInformation("[IMAGEN REPOS] Imagen encontrada: {Nombre}, Tamaño: {Size} bytes, Archivo es null? {IsNull}", 
+                        img.NombreArchivo, img.Tamanio, img.Archivo == null);
+                }
+                else
+                {
+                    _logger.LogWarning("[IMAGEN REPOS] Imagen {ImagenId} no encontrada.", imagenId);
                 }
 
-                return dto;
+                return img;
             }
-
-            return null;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[IMAGEN REPOS] Error en ObtenerImagenAsync: {Message}", ex.Message);
+                throw;
+            }
         }
 
-        public async Task<IEnumerable<ProductoImagenListadoDTO>> ListarPorProductoAsync(int productoId)
+        public async Task<IEnumerable<ProductoImagenListadoDTO>> ListarPorProductoAsync(int productoId, CancellationToken ct = default)
         {
-            var imagenes = new List<ProductoImagenListadoDTO>();
-
-            using var connection = _connectionFactory.CreateConnection();
-            if (connection.State != ConnectionState.Open) connection.Open();
-
-            using var command = (OracleCommand)connection.CreateCommand();
-            command.CommandText = "PKG_PRODUCTO_IMAGEN.sp_listar_imagenes_producto";
-            command.CommandType = CommandType.StoredProcedure;
-
-            command.Parameters.Add("p_pro_producto", OracleDbType.Int32).Value = productoId;
-            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-            using var reader = command.ExecuteReader();
-            
-            // Precalcular ordinales para performance y seguridad de nulos
-            int ordImagenId = reader.GetOrdinal("ImagenId");
-            int ordProductoId = reader.GetOrdinal("ProductoId");
-            int ordNombreArchivo = reader.GetOrdinal("NombreArchivo");
-            int ordContentType = reader.GetOrdinal("ContentType");
-            int ordTamanio = reader.GetOrdinal("Tamanio");
-            int ordUrl = reader.GetOrdinal("Url");
-            int ordTipo = reader.GetOrdinal("Tipo");
-            int ordOrden = reader.GetOrdinal("Orden");
-            int ordFechaCarga = reader.GetOrdinal("FechaCarga");
-
-            while (reader.Read())
+            try 
             {
-                imagenes.Add(new ProductoImagenListadoDTO
+                var p = new OracleDynamicParameters();
+                p.Add("p_pro_producto", productoId);
+                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+
+                using var connection = _connectionFactory.CreateConnection();
+                _logger.LogInformation("[IMAGEN REPOS] Listando imágenes para producto {ProductoId}...", productoId);
+                
+                var results = await connection.QueryAsync<ProductoImagenListadoDTO>(new CommandDefinition(
+                    "PKG_PRODUCTO_IMAGEN.sp_listar_imagenes_producto",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    cancellationToken: ct
+                ));
+
+                var list = results.ToList();
+                _logger.LogInformation("[IMAGEN REPOS] OK: {Count} imágenes encontradas.", list.Count);
+                return list;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[IMAGEN REPOS] Error en ListarPorProductoAsync: {Message}", ex.Message);
+                throw;
+            }
+        }
+
+        public async Task<ProductoImagenDTO?> ObtenerPrincipalPorProductoAsync(int productoId, CancellationToken ct = default)
+        {
+            try 
+            {
+                var p = new OracleDynamicParameters();
+                p.Add("p_producto_id", productoId);
+                p.Add("p_imagen_id", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+
+                using var connection = _connectionFactory.CreateConnection();
+                _logger.LogInformation("[IMAGEN REPOS] Buscando imagen principal para producto {ProductoId}...", productoId);
+
+                await connection.ExecuteAsync(new CommandDefinition("PKG_PRODUCTO_IMAGEN.sp_obtener_imagen_principal", p, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+                
+                int? imagenId = p.Get<int?>("p_imagen_id");
+                if (imagenId.HasValue && imagenId > 0)
                 {
-                    ImagenId = reader.GetInt32(ordImagenId),
-                    ProductoId = reader.GetInt32(ordProductoId),
-                    NombreArchivo = reader.IsDBNull(ordNombreArchivo) ? string.Empty : reader.GetString(ordNombreArchivo),
-                    ContentType = reader.IsDBNull(ordContentType) ? string.Empty : reader.GetString(ordContentType),
-                    Tamanio = reader.IsDBNull(ordTamanio) ? 0 : Convert.ToInt64(reader.GetValue(ordTamanio)),
-                    Url = reader.IsDBNull(ordUrl) ? null : reader.GetString(ordUrl),
-                    Tipo = reader.IsDBNull(ordTipo) ? null : reader.GetString(ordTipo),
-                    Orden = reader.IsDBNull(ordOrden) ? 0 : reader.GetInt32(ordOrden),
-                    FechaCarga = reader.IsDBNull(ordFechaCarga) ? DateTime.MinValue : reader.GetDateTime(ordFechaCarga)
-                });
+                    _logger.LogInformation("[IMAGEN REPOS] Imagen principal encontrada: ID {ImagenId}", imagenId);
+                    return await ObtenerImagenAsync(imagenId.Value, ct);
+                }
+                
+                _logger.LogWarning("[IMAGEN REPOS] El producto {ProductoId} no tiene imagen principal.", productoId);
+                return null;
             }
-
-            return imagenes;
-        }
-
-        public async Task<ProductoImagenDTO?> ObtenerPrincipalPorProductoAsync(int productoId)
-        {
-            // Consulta optimizada para traer solo la primera activa de tipo PRINCIPAL o la primera en orden
-            using var connection = _connectionFactory.CreateConnection();
-            string sql = @"SELECT PIM_PRODUCTO_IMAGEN 
-                          FROM ALP_PRODUCTO_IMAGEN 
-                          WHERE PRO_PRODUCTO = :productoId 
-                            AND PIM_ESTADO = 'ACTIVO' 
-                          ORDER BY CASE WHEN PIM_TIPO = 'PRINCIPAL' THEN 1 ELSE 2 END, PIM_ORDEN ASC 
-                          FETCH FIRST 1 ROW ONLY";
-            
-            int? imagenId = await connection.QueryFirstOrDefaultAsync<int?>(sql, new { productoId });
-            
-            if (imagenId.HasValue)
+            catch (Exception ex)
             {
-                return await ObtenerImagenAsync(imagenId.Value);
+                _logger.LogError(ex, "[IMAGEN REPOS] Error en ObtenerPrincipalPorProductoAsync: {Message}", ex.Message);
+                throw;
             }
-            
-            return null;
         }
 
-        public async Task<bool> EliminarImagenAsync(int imagenId, IDbTransaction? transaction = null)
+        public async Task<bool> EliminarImagenAsync(int imagenId, IDbTransaction? transaction = null, CancellationToken ct = default)
         {
+            LogOperacionInicio(nameof(EliminarImagenAsync), imagenId);
+
+            var p = new OracleDynamicParameters();
+            p.Add("p_pim_id", imagenId);
+            p.Add("p_filas_afect", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
+
             using var connection = transaction?.Connection == null ? _connectionFactory.CreateConnection() : null;
             var activeConnection = transaction?.Connection ?? connection!;
 
-            if (activeConnection.State != ConnectionState.Open) activeConnection.Open();
-
-            using var command = (OracleCommand)activeConnection.CreateCommand();
-            command.CommandText = "PKG_PRODUCTO_IMAGEN.sp_eliminar_imagen_producto";
-            command.CommandType = CommandType.StoredProcedure;
-            if (transaction != null) command.Transaction = (OracleTransaction)transaction;
-
-            command.Parameters.Add("p_pim_id", OracleDbType.Int32).Value = imagenId;
-            var pFilas = new OracleParameter("p_filas_afect", OracleDbType.Int32, ParameterDirection.Output);
-            command.Parameters.Add(pFilas);
-
-            command.ExecuteNonQuery();
-
-            return Convert.ToInt32(pFilas.Value.ToString()) > 0;
+            await activeConnection.ExecuteAsync(new CommandDefinition("PKG_PRODUCTO_IMAGEN.sp_eliminar_imagen_producto", p, transaction: transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+            
+            bool exito = p.Get<int>("p_filas_afect") > 0;
+            LogOperacionExito(nameof(EliminarImagenAsync), exito);
+            return exito;
         }
     }
 }

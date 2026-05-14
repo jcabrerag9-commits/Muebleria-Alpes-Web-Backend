@@ -28,5 +28,6 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public int Orden { get; set; }
         public DateTime FechaCarga { get; set; }
         public bool EsPrincipal => Tipo == "PRINCIPAL";
+        public string ImagenUrl => $"/api/ProductoImagen/{ImagenId}";
     }
 }

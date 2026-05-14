@@ -26,6 +26,12 @@ builder.Services.AddScoped<IInventarioRepository, InventarioRepository>();
 builder.Services.AddScoped<IInventarioService, InventarioService>();
 builder.Services.AddScoped<IProductoImagenRepository, ProductoImagenRepository>();
 builder.Services.AddScoped<IProductoImagenService, ProductoImagenService>();
+builder.Services.AddScoped<ICatalogoRepository, CatalogoRepository>();
+builder.Services.AddScoped<ICatalogoService, CatalogoService>();
+builder.Services.AddScoped<IBodegaRepository, BodegaRepository>();
+builder.Services.AddScoped<IBodegaService, BodegaService>();
+builder.Services.AddScoped<IFinanzasRepository, FinanzasRepository>();
+builder.Services.AddScoped<IFinanzasService, FinanzasService>();
 
 builder.Services.AddCors(options =>
 {

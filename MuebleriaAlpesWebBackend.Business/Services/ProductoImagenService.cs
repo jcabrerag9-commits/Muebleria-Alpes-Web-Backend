@@ -46,6 +46,9 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
             tipo = tipo.ToUpper();
 
+            System.Console.WriteLine($"[Service Log] SubirImagenAsync llamado para Producto: {productoId}");
+            System.Console.WriteLine($"[Service Log] UrlOpcional recibida: {url ?? "null"}");
+
             using var connection = _connectionFactory.CreateConnection();
             if (connection.State != System.Data.ConnectionState.Open) connection.Open();
             using var transaction = connection.BeginTransaction();
@@ -68,8 +71,8 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
                 return new ApiResponse<int>
                 {
-                    Resultado = "EXITO",
-                    Mensaje = "Imagen cargada correctamente.",
+                    Success = true,
+                    Message = "Imagen cargada correctamente.",
                     Data = idGenerado
                 };
             }
@@ -113,8 +116,8 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
                 return new ApiResponse<bool>
                 {
-                    Resultado = "EXITO",
-                    Mensaje = "Imagen desactivada correctamente.",
+                    Success = true,
+                    Message = "Imagen desactivada correctamente.",
                     Data = eliminado
                 };
             }
@@ -132,7 +135,7 @@ namespace MuebleriaAlpesWebBackend.Business.Services
 
         private ApiResponse<T> Error<T>(string mensaje)
         {
-            return new ApiResponse<T> { Resultado = "ERROR", Mensaje = mensaje };
+            return new ApiResponse<T> { Success = false, Message = mensaje };
         }
     }
 }
