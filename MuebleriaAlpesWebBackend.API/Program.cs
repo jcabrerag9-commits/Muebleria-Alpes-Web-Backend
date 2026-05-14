@@ -1,9 +1,15 @@
 using Microsoft.Extensions.DependencyInjection;
 using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Business.Services;
+using MuebleriaAlpesWebBackend.Business.Services.RecursosHumanos;
+using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Data.Repositories;
+using MuebleriaAlpesWebBackend.Data.Repositories.RecursosHumanos;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories;
+using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories.RecursosHumanos;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Services;
+using MuebleriaAlpesWebBackend.Domain.Interfaces.Services.RecursosHumanos;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +21,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<OracleConnectionFactory>();
 builder.Services.AddScoped<ITestRepository, TestRepository>();
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IVarianteRepository, VarianteRepository>();
+builder.Services.AddScoped<IContenidoRepository, ContenidoRepository>();
+builder.Services.AddScoped<IPrecioRepository, PrecioRepository>();
+builder.Services.AddScoped<IUbicacionRepository, UbicacionRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+
 builder.Services.AddScoped<ITestService, TestService>();
 builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
@@ -32,6 +45,34 @@ builder.Services.AddScoped<IBodegaRepository, BodegaRepository>();
 builder.Services.AddScoped<IBodegaService, BodegaService>();
 builder.Services.AddScoped<IFinanzasRepository, FinanzasRepository>();
 builder.Services.AddScoped<IFinanzasService, FinanzasService>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IVarianteService, VarianteService>();
+builder.Services.AddScoped<IContenidoService, ContenidoService>();
+builder.Services.AddScoped<IPrecioService, PrecioService>();
+builder.Services.AddScoped<IUbicacionService, UbicacionService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IVentasRepository, VentasRepository>();
+builder.Services.AddScoped<IVentasService, VentasService>();
+builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
+builder.Services.AddScoped<ICarritoService, CarritoService>();
+builder.Services.AddScoped<ILogisticaRepository, LogisticaRepository>();
+builder.Services.AddScoped<ILogisticaService, LogisticaService>();
+builder.Services.AddScoped<IReportesRepository, ReportesRepository>();
+builder.Services.AddScoped<IReportesService, ReportesService>();
+builder.Services.AddScoped<ICajaRepository, CajaRepository>();
+builder.Services.AddScoped<ICajaService, CajaService>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+
+// ── Promociones ───────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();
+builder.Services.AddScoped<IPromocionService, PromocionService>();
+builder.Services.AddScoped<IBannerRepository, BannerRepository>();
+builder.Services.AddScoped<IBannerService, BannerService>();
+
+// ── Devoluciones ──────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IDevolucionRepository, DevolucionRepository>();
+builder.Services.AddScoped<IDevolucionService, DevolucionService>();
 
 builder.Services.AddCors(options =>
 {
@@ -44,8 +85,32 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddScoped<IDepartamentoRepository, DepartamentoRepository>();
+builder.Services.AddScoped<IDepartamentoService, DepartamentoService>();
+builder.Services.AddScoped<IPuestoRepository, PuestoRepository>();
+builder.Services.AddScoped<IPuestoService, PuestoService>();
+builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();
+builder.Services.AddScoped<ITurnoService, TurnoService>();
+builder.Services.AddScoped<ITipoPagoRepository, TipoPagoRepository>();
+builder.Services.AddScoped<ITipoPagoService, TipoPagoService>();
+builder.Services.AddScoped<ITipoDeduccionRepository, TipoDeduccionRepository>();
+builder.Services.AddScoped<ITipoDeduccionService, TipoDeduccionService>();
+builder.Services.AddScoped<IEmpleadoRepository, EmpleadoRepository>();
+builder.Services.AddScoped<IEmpleadoService, EmpleadoService>();
+builder.Services.AddScoped<IAsignacionEmpleadoRepository, AsignacionEmpleadoRepository>();
+builder.Services.AddScoped<IAsignacionEmpleadoService, AsignacionEmpleadoService>();
+builder.Services.AddScoped<IAsistenciaRepository, AsistenciaRepository>();
+builder.Services.AddScoped<IAsistenciaService, AsistenciaService>();
+builder.Services.AddScoped<IVacacionRepository, VacacionesRepository>();
+builder.Services.AddScoped<IVacacionesService, VacacionesService>();
+builder.Services.AddScoped<INominaRepository, NominaRepository>();
+builder.Services.AddScoped<INominaService, NominaService>();
+builder.Services.AddScoped<IEvaluacionRepository, EvaluacionRepository>();
+builder.Services.AddScoped<IEvaluacionService, EvaluacionService>();
 
 var app = builder.Build();
+
+app.UseMiddleware<MuebleriaAlpesWebBackend.API.Middleware.ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

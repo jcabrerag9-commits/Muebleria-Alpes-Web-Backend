@@ -23,157 +23,182 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<InventarioResponse<int?>> CrearProductoAsync(CrearProductoRequest request, IDbTransaction? transaction = null, CancellationToken ct = default)
+        public async Task<IEnumerable<Producto>> GetAllAsync()
         {
-            ValidarParametroNulo(request, nameof(request));
-            LogOperacionInicio(nameof(CrearProductoAsync), new { request.Nombre, request.TipoMueble });
-
-            var p = new OracleDynamicParameters();
-            p.Add("p_tipo_mueble", request.TipoMueble);
-            p.Add("p_nombre", request.Nombre);
-            p.Add("p_desc_corta", request.DescripcionCorta);
-            p.Add("p_desc_larga", request.DescripcionLarga);
-            p.Add("p_peso", request.Peso);
-            p.Add("p_es_configurable", request.EsConfigurable);
-            p.Add("p_id_nuevo", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
-
-            try
-            {
-                using var connection = transaction?.Connection == null ? _connectionFactory.CreateConnection() : null;
-                var activeConnection = transaction?.Connection ?? connection!;
-                
-                await activeConnection.ExecuteAsync(new CommandDefinition("PKG_PRODUCTOS.sp_crear_producto", p, transaction: transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
-                int? id = p.Get<int?>("p_id_nuevo");
-                
-                LogOperacionExito(nameof(CrearProductoAsync), id);
-                return new InventarioResponse<int?> { Resultado = "EXITO", Mensaje = "Producto creado con éxito", Data = id };
-            }
-            catch (OracleException ex)
-            {
-                return MapearErrorOracle<int?>(ex);
-            }
+            using var connection = _connectionFactory.CreateConnection();
+            string query = "SELECT PRO_PRODUCTO as Id, TMU_TIPO_MUEBLE as TipoMueble, PRO_SKU as Sku, PRO_NOMBRE as Nombre, PRO_DESCRIPCION_CORTA as DescripcionCorta, PRO_DESCRIPCION_LARGA as DescripcionLarga, PRO_PESO as Peso, PRO_ES_CONFIGURABLE as EsConfigurable, PRO_ESTADO as Estado, PRO_PUBLICADO as Publicado FROM ALP_PRODUCTO";
+            return await connection.QueryAsync<Producto>(query);
         }
 
-        public async Task<InventarioResponse<bool>> ActualizarProductoAsync(int productoId, ActualizarProductoRequest request, IDbTransaction? transaction = null, CancellationToken ct = default)
+        public async Task<Producto> GetByIdAsync(int id)
         {
-            ValidarParametroNulo(request, nameof(request));
-            LogOperacionInicio(nameof(ActualizarProductoAsync), new { productoId, request.Nombre });
-
-            var p = new OracleDynamicParameters();
-            p.Add("p_producto", productoId);
-            p.Add("p_nombre", request.Nombre);
-            p.Add("p_desc_corta", request.DescripcionCorta);
-            p.Add("p_peso", request.Peso);
-            p.Add("p_tipo_mueble", request.TipoMueble);
-
-            try
-            {
-                using var connection = transaction?.Connection == null ? _connectionFactory.CreateConnection() : null;
-                var activeConnection = transaction?.Connection ?? connection!;
-                
-                await activeConnection.ExecuteAsync(new CommandDefinition("PKG_PRODUCTOS.sp_actualizar_producto", p, transaction: transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
-                
-                LogOperacionExito(nameof(ActualizarProductoAsync));
-                return new InventarioResponse<bool> { Resultado = "EXITO", Mensaje = "Producto actualizado con éxito", Data = true };
-            }
-            catch (OracleException ex)
-            {
-                return MapearErrorOracle<bool>(ex, false);
-            }
+            using var connection = _connectionFactory.CreateConnection();
+            string query = "SELECT PRO_PRODUCTO as Id, TMU_TIPO_MUEBLE as TipoMueble, PRO_SKU as Sku, PRO_NOMBRE as Nombre, PRO_DESCRIPCION_CORTA as DescripcionCorta, PRO_DESCRIPCION_LARGA as DescripcionLarga, PRO_PESO as Peso, PRO_ES_CONFIGURABLE as EsConfigurable, PRO_ESTADO as Estado, PRO_PUBLICADO as Publicado FROM ALP_PRODUCTO WHERE PRO_PRODUCTO = :id";
+            return await connection.QueryFirstOrDefaultAsync<Producto>(query, new { id });
         }
 
-        public async Task<InventarioResponse<int?>> CrearVarianteAsync(CrearVarianteRequest request, IDbTransaction? transaction = null, CancellationToken ct = default)
+        public async Task CreateAsync(Producto producto)
         {
-            ValidarParametroNulo(request, nameof(request));
-            LogOperacionInicio(nameof(CrearVarianteAsync), new { request.ProductoId, request.Nombre });
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_tipo_mueble", producto.TipoMueble);
+            parameters.Add("p_nombre", producto.Nombre);
+            parameters.Add("p_desc_corta", producto.DescripcionCorta);
+            parameters.Add("p_desc_larga", producto.DescripcionLarga);
+            parameters.Add("p_peso", producto.Peso);
+            parameters.Add("p_es_configurable", producto.EsConfigurable);
 
-            var p = new OracleDynamicParameters();
-            p.Add("p_producto", request.ProductoId);
-            p.Add("p_nombre", request.Nombre);
-            p.Add("p_cod_barras", request.CodigoBarras);
-            p.Add("p_imagen_url", request.ImagenUrl);
-            p.Add("p_id_nuevo", dbType: OracleMappingType.Int32, direction: ParameterDirection.Output);
-
-            try
-            {
-                using var connection = transaction?.Connection == null ? _connectionFactory.CreateConnection() : null;
-                var activeConnection = transaction?.Connection ?? connection!;
-
-                await activeConnection.ExecuteAsync(new CommandDefinition("PKG_PRODUCTO_VARIANTES.sp_crear_variante_producto", p, transaction: transaction, commandType: CommandType.StoredProcedure, cancellationToken: ct));
-                int? id = p.Get<int?>("p_id_nuevo");
-
-                LogOperacionExito(nameof(CrearVarianteAsync), id);
-                return new InventarioResponse<int?> { Resultado = "EXITO", Mensaje = "Variante creada con éxito", Data = id };
-            }
-            catch (OracleException ex)
-            {
-                return MapearErrorOracle<int?>(ex);
-            }
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_crear_producto", parameters, commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<ProductoDTO?> ObtenerProductoPorIdAsync(int productoId, CancellationToken ct = default)
+        public async Task UpdateAsync(Producto producto)
         {
-            try 
-            {
-                var p = new OracleDynamicParameters();
-                p.Add("p_producto_id", productoId);
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", producto.Id);
+            parameters.Add("p_nombre", producto.Nombre);
+            parameters.Add("p_desc_corta", producto.DescripcionCorta);
+            parameters.Add("p_desc_larga", producto.DescripcionLarga);
+            parameters.Add("p_peso", producto.Peso);
+            parameters.Add("p_es_configurable", producto.EsConfigurable);
 
-                using var connection = _connectionFactory.CreateConnection();
-                _logger.LogInformation("[PROD REPOS] Obteniendo producto {ProductoId}...", productoId);
-
-                var producto = await connection.QueryFirstOrDefaultAsync<ProductoDTO>(new CommandDefinition(
-                    "PKG_PRODUCTOS.sp_obtener_producto_por_id",
-                    p,
-                    commandType: CommandType.StoredProcedure,
-                    cancellationToken: ct
-                ));
-
-                if (producto != null)
-                    _logger.LogInformation("[PROD REPOS] Producto {ProductoId} encontrado: {Nombre}", productoId, producto.Nombre);
-                else
-                    _logger.LogWarning("[PROD REPOS] Producto {ProductoId} NO encontrado.", productoId);
-
-                return producto;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[PROD REPOS] Error en ObtenerProductoPorIdAsync: {Message}", ex.Message);
-                throw;
-            }
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_actualizar_producto", parameters, commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<IEnumerable<ProductoDTO>> ObtenerTodosAsync(CancellationToken ct = default)
+        public async Task ChangeStatusAsync(int id, string estado)
         {
-            try 
-            {
-                var p = new OracleDynamicParameters();
-                p.Add("p_cursor", dbType: OracleMappingType.RefCursor, direction: ParameterDirection.Output);
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", id);
+            parameters.Add("p_estado", estado);
 
-                using var connection = _connectionFactory.CreateConnection();
-                _logger.LogInformation("[REPOS] Ejecutando PKG_PRODUCTOS.sp_obtener_todos_productos...");
-                
-                var results = await connection.QueryAsync<ProductoDTO>(new CommandDefinition(
-                    "PKG_PRODUCTOS.sp_obtener_todos_productos",
-                    p,
-                    commandType: CommandType.StoredProcedure,
-                    cancellationToken: ct
-                ));
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_cambiar_estado_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
 
-                var list = results.ToList();
-                _logger.LogInformation("[REPOS] OK: Se obtuvieron {Count} productos", list.Count);
-                return list;
-            }
-            catch (OracleException ex)
-            {
-                _logger.LogError(ex, "[REPOS] ERROR ORACLE en ObtenerTodosAsync: {Message}", ex.Message);
-                throw;
-            }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "[REPOS] ERROR GENERAL en ObtenerTodosAsync: {Message}", ex.Message);
-                throw;
-            }
+        public async Task DeleteLogicoAsync(int id)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", id);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_eliminar_producto_logico", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task UpsertDimensionAsync(DimensionProducto dimension)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", dimension.ProductoId);
+            parameters.Add("p_alto", dimension.Alto);
+            parameters.Add("p_ancho", dimension.Ancho);
+            parameters.Add("p_largo", dimension.Largo);
+            parameters.Add("p_unidad", dimension.UnidadId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_registrar_dimension_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task AsignarCategoriaAsync(int productoId, int categoriaId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_categoria", categoriaId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_asignar_categoria_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task QuitarCategoriaAsync(int productoId, int categoriaId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_categoria", categoriaId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_quitar_categoria_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task AsignarColeccionAsync(int productoId, int coleccionId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_coleccion", coleccionId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_asignar_coleccion_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task QuitarColeccionAsync(int productoId, int coleccionId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_coleccion", coleccionId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_quitar_coleccion_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task AsignarMaterialAsync(int productoId, int materialId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_material", materialId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_asignar_material_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task QuitarMaterialAsync(int productoId, int materialId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_material", materialId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_quitar_material_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task AsignarColorAsync(int productoId, int colorId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_color", colorId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_asignar_color_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task QuitarColorAsync(int productoId, int colorId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", productoId);
+            parameters.Add("p_color", colorId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_quitar_color_producto", parameters, commandType: CommandType.StoredProcedure);
+        }
+
+        public async Task<int> CreateResenaAsync(ResenaProducto resena)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_producto", resena.ProductoId);
+            parameters.Add("p_cliente", resena.ClienteId);
+            parameters.Add("p_calificacion", resena.Calificacion);
+            parameters.Add("p_titulo", resena.Titulo);
+            parameters.Add("p_comentario", resena.Comentario);
+            parameters.Add("p_id_nuevo", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_registrar_resena_producto", parameters, commandType: CommandType.StoredProcedure);
+            return parameters.Get<int>("p_id_nuevo");
+        }
+
+        public async Task AprobarResenaAsync(int resenaId)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("p_resena", resenaId);
+
+            await connection.ExecuteAsync("PKG_PRODUCTOS.sp_aprobar_resena_producto", parameters, commandType: CommandType.StoredProcedure);
         }
     }
 }

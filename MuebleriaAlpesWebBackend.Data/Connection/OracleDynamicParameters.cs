@@ -1,126 +1,84 @@
-using Dapper;
+﻿using Dapper;
 using Oracle.ManagedDataAccess.Client;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MuebleriaAlpesWebBackend.Data.Connection
 {
-    public enum OracleMappingType
-    {
-        Varchar2 = OracleDbType.Varchar2,
-        Int32 = OracleDbType.Int32,
-        Decimal = OracleDbType.Decimal,
-        RefCursor = OracleDbType.RefCursor,
-        Date = OracleDbType.Date,
-        Double = OracleDbType.Double,
-        Long = OracleDbType.Long,
-        Byte = OracleDbType.Byte,
-        Char = OracleDbType.Char,
-        XmlType = OracleDbType.XmlType,
-        Blob = OracleDbType.Blob,
-        Clob = OracleDbType.Clob
-    }
-
     public class OracleDynamicParameters : SqlMapper.IDynamicParameters
     {
-        private readonly DynamicParameters _dynamicParameters = new DynamicParameters();
-        private readonly List<OracleParameter> _oracleParameters = new List<OracleParameter>();
+        private readonly List<OracleParameter> _parameters = new();
 
-        public void Add(string name, object? value = null, OracleMappingType? dbType = null, ParameterDirection direction = ParameterDirection.Input, int? size = null)
+        public void Add(
+            string name,
+            object? value = null,
+            OracleDbType? dbType = null,
+            ParameterDirection direction = ParameterDirection.Input,
+            int? size = null)
         {
+            var parameter = new OracleParameter
+            {
+                ParameterName = name,
+                Value = value ?? DBNull.Value,
+                Direction = direction
+            };
+
             if (dbType.HasValue)
-            {
-                var oracleParameter = new OracleParameter
-                {
-                    ParameterName = name,
-                    OracleDbType = (OracleDbType)dbType.Value,
-                    Direction = direction,
-                    Value = value
-                };
+                parameter.OracleDbType = dbType.Value;
 
-                if (size.HasValue)
-                {
-                    oracleParameter.Size = size.Value;
-                }
+            if (size.HasValue)
+                parameter.Size = size.Value;
 
-                _oracleParameters.Add(oracleParameter);
-                
-                // Hardening: También lo agregamos a Dapper para que sepa que el parámetro existe
-                // aunque el valor real se maneje vía OracleParameter directo en AddParameters
-                _dynamicParameters.Add(name, value, direction: direction, size: size);
-            }
-            else
-            {
-                _dynamicParameters.Add(name, value, direction: direction, size: size);
-            }
+            _parameters.Add(parameter);
         }
 
-        public void Add(string name, object value, DbType dbType, ParameterDirection direction = ParameterDirection.Input, int? size = null)
+        public T? Get<T>(string name)
         {
-            _dynamicParameters.Add(name, value, dbType, direction, size);
+            var parameter = _parameters.FirstOrDefault(p => p.ParameterName == name);
+
+            if (parameter == null || parameter.Value == null || parameter.Value == DBNull.Value)
+                return default;
+
+            var value = parameter.Value;
+
+            if (value is Oracle.ManagedDataAccess.Types.OracleDecimal oracleDecimal)
+            {
+                if (oracleDecimal.IsNull)
+                    return default;
+
+                value = oracleDecimal.Value;
+            }
+
+            if (value is Oracle.ManagedDataAccess.Types.OracleString oracleString)
+            {
+                if (oracleString.IsNull)
+                    return default;
+
+                value = oracleString.Value;
+            }
+
+            var stringValue = value.ToString();
+
+            if (string.IsNullOrWhiteSpace(stringValue) || stringValue.Equals("null", StringComparison.OrdinalIgnoreCase))
+                return default;
+
+            var targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+
+            return (T)Convert.ChangeType(stringValue, targetType);
         }
 
         public void AddParameters(IDbCommand command, SqlMapper.Identity identity)
         {
-            ((SqlMapper.IDynamicParameters)_dynamicParameters).AddParameters(command, identity);
+            var oracleCommand = (OracleCommand)command;
 
-            if (command is OracleCommand oracleCommand)
+            foreach (var parameter in _parameters)
             {
-                oracleCommand.BindByName = true;
-                foreach (var p in _oracleParameters)
-                {
-                    if (oracleCommand.Parameters.Contains(p.ParameterName))
-                    {
-                        oracleCommand.Parameters.Remove(oracleCommand.Parameters[p.ParameterName]);
-                    }
-                    oracleCommand.Parameters.Add(p);
-                }
+                oracleCommand.Parameters.Add(parameter);
             }
-        }
-
-        public T Get<T>(string name)
-        {
-            var oracleParam = _oracleParameters.Find(p => p.ParameterName == name);
-            if (oracleParam != null)
-            {
-                var val = oracleParam.Value;
-                if (val == DBNull.Value || val == null) return default!;
-
-                // Manejo de OracleDecimal u otros tipos específicos de Oracle (H.8.7)
-                try 
-                {
-                    // Si T es nullable, obtenemos el tipo base
-                    Type targetType = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-                    
-                    // Si el valor ya es T, casting directo
-                    if (val is T variable) return variable;
-
-                    // Si es OracleDecimal, usamos su representación en string o su propiedad Value
-                    if (val.GetType().Name == "OracleDecimal")
-                    {
-                        dynamic od = val;
-                        if (od.IsNull) return default!;
-                        
-                        // Conversión segura vía string para evitar problemas de casting directo
-                        string stringVal = od.ToString();
-                        return (T)System.Convert.ChangeType(stringVal, targetType);
-                    }
-
-                    // Conversión genérica usando string como puente seguro
-                    return (T)System.Convert.ChangeType(val.ToString()!, targetType);
-                }
-                catch (System.Exception ex)
-                {
-                    System.Console.WriteLine($"[OracleDynamicParameters ERROR] Fallo al convertir {name} ({val?.GetType().Name}) a {typeof(T).Name}: {ex.Message}");
-                    try {
-                        return (T)System.Convert.ChangeType(val, typeof(T));
-                    } catch {
-                        return (T)val; 
-                    }
-                }
-            }
-
-            return _dynamicParameters.Get<T>(name);
         }
     }
 }
