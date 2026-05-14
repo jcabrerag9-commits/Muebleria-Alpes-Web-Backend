@@ -1,18 +1,24 @@
 using Dapper;
+using Microsoft.Extensions.Logging;
 using MuebleriaAlpesWebBackend.Data.Connection;
+using MuebleriaAlpesWebBackend.Data.Repositories.Base;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories;
 using MuebleriaAlpesWebBackend.Domain.Models;
+using Oracle.ManagedDataAccess.Client;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MuebleriaAlpesWebBackend.Data.Repositories
 {
-    public class ProductoRepository : IProductoRepository
+    public class ProductoRepository : BaseRepository<ProductoRepository>, IProductoRepository
     {
         private readonly OracleConnectionFactory _connectionFactory;
 
-        public ProductoRepository(OracleConnectionFactory connectionFactory)
+        public ProductoRepository(OracleConnectionFactory connectionFactory, ILogger<ProductoRepository> logger) : base(logger)
         {
             _connectionFactory = connectionFactory;
         }

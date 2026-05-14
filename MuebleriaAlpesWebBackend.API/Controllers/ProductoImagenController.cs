@@ -36,11 +36,11 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         public async Task<IActionResult> Upload([FromForm] UploadProductoImagenRequest request)
         {
             if (request.Archivo == null || request.Archivo.Length == 0)
-                return BadRequest(new ApiResponse<int> { Resultado = "ERROR", Mensaje = "Archivo vacío." });
+                return BadRequest(new ApiResponse<int> { Success = false, Message = "Archivo vacío." });
 
             string extension = Path.GetExtension(request.Archivo.FileName).ToLower();
             if (!ALLOWED_EXTENSIONS.Contains(extension) || !ALLOWED_MIME_TYPES.Contains(request.Archivo.ContentType.ToLower()))
-                return BadRequest(new ApiResponse<int> { Resultado = "ERROR", Mensaje = "Formato no permitido." });
+                return BadRequest(new ApiResponse<int> { Success = false, Message = "Formato no permitido." });
 
             byte[] fileBytes;
             using (var ms = new MemoryStream())
@@ -60,7 +60,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
                 request.Orden
             );
 
-            if (!response.IsSuccess) return BadRequest(response);
+            if (!response.Success) return BadRequest(response);
             return Ok(response);
         }
 
@@ -92,7 +92,8 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             var imagenes = await _service.ListarPorProductoAsync(productoId);
             return Ok(new ApiResponse<IEnumerable<ProductoImagenListadoDTO>>
             {
-                Resultado = "EXITO",
+                Success = true,
+                Message = "Listado obtenido",
                 Data = imagenes
             });
         }
@@ -120,7 +121,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var response = await _service.EliminarImagenAsync(id);
-            if (!response.IsSuccess) return BadRequest(response);
+            if (!response.Success) return BadRequest(response);
             return Ok(response);
         }
     }

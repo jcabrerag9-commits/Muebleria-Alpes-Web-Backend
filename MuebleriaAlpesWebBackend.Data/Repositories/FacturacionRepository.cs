@@ -3,170 +3,174 @@ using Oracle.ManagedDataAccess.Client;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories;
 using MuebleriaAlpesWebBackend.Domain.Models;
+using MuebleriaAlpesWebBackend.Data.Repositories.Base;
+using Microsoft.Extensions.Logging;
 
 namespace MuebleriaAlpesWebBackend.Data.Repositories
 {
-    public class FacturacionRepository : IFacturacionRepository
+    public class FacturacionRepository : BaseRepository<FacturacionRepository>, IFacturacionRepository
     {
         private readonly OracleConnectionFactory _connectionFactory;
 
-        public FacturacionRepository(OracleConnectionFactory connectionFactory)
+        public FacturacionRepository(OracleConnectionFactory connectionFactory, ILogger<FacturacionRepository> logger) : base(logger)
         {
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<FacturacionResponse<int?>> GenerarFacturaAsync(GenerarFacturaRequest request)
+        public async Task<ApiResponse<int?>> GenerarFacturaAsync(GenerarFacturaRequest request, CancellationToken ct = default)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("p_orden_id", request.OrdenId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("p_pago_id", request.PagoId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("p_usuario_id", request.UsuarioId, DbType.Int32, ParameterDirection.Input);
+            ValidarParametroNulo(request, nameof(request));
+            LogOperacionInicio(nameof(GenerarFacturaAsync), new { request.OrdenId, request.UsuarioId });
+
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("p_orden_id", request.OrdenId);
+            parameters.Add("p_pago_id", request.PagoId);
+            parameters.Add("p_usuario_id", request.UsuarioId);
             
-            // Parámetros de Salida
-            parameters.Add("p_factura_id", dbType: DbType.Int32, direction: ParameterDirection.Output);
-            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
-            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 500);
+            parameters.Add("p_factura_id", dbType: OracleDbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("p_resultado", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 4000);
 
-            using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_FACTURACION.SP_GENERAR_FACTURA_ORDEN", parameters, commandType: CommandType.StoredProcedure);
-
-            return new FacturacionResponse<int?>
+            try
             {
-                Resultado = parameters.Get<string>("p_resultado"),
-                Mensaje = parameters.Get<string>("p_mensaje"),
-                Data = parameters.Get<int?>("p_factura_id")
-            };
+                _logger.LogInformation("[FACTURA ORDEN] {OrdenId}", request.OrdenId);
+                
+                using var connection = _connectionFactory.CreateConnection();
+                await connection.ExecuteAsync(new CommandDefinition("PKG_FACTURACION.SP_GENERAR_FACTURA_ORDEN", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+
+                string resultado = parameters.Get<string>("p_resultado");
+                _logger.LogInformation("[FACTURA RESULTADO] {Resultado}", resultado);
+
+                var response = new ApiResponse<int?>
+                {
+                    Success = resultado == "EXITO",
+                    Message = parameters.Get<string>("p_mensaje"),
+                    Data = parameters.Get<int?>("p_factura_id")
+                };
+
+                LogOperacionExito(nameof(GenerarFacturaAsync), response.Resultado);
+                return response;
+            }
+            catch (OracleException ex)
+            {
+                var mapped = MapearErrorOracle<int?>(ex);
+                return new ApiResponse<int?> { Success = false, Message = mapped.Mensaje };
+            }
         }
 
-        public async Task<FacturacionResponse<bool>> AnularFacturaAsync(AnularFacturaRequest request)
+        public async Task<ApiResponse<bool>> AnularFacturaAsync(AnularFacturaRequest request, CancellationToken ct = default)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("p_factura_id", request.FacturaId, DbType.Int32, ParameterDirection.Input);
-            parameters.Add("p_motivo", request.Motivo, DbType.String, ParameterDirection.Input);
-            parameters.Add("p_usuario_id", request.UsuarioId, DbType.Int32, ParameterDirection.Input);
+            ValidarParametroNulo(request, nameof(request));
+            LogOperacionInicio(nameof(AnularFacturaAsync), new { request.FacturaId, request.UsuarioId });
 
-            parameters.Add("p_resultado", dbType: DbType.String, direction: ParameterDirection.Output, size: 50);
-            parameters.Add("p_mensaje", dbType: DbType.String, direction: ParameterDirection.Output, size: 500);
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("p_factura_id", request.FacturaId);
+            parameters.Add("p_motivo", request.Motivo);
+            parameters.Add("p_usuario_id", request.UsuarioId);
 
-            using var connection = _connectionFactory.CreateConnection();
-            await connection.ExecuteAsync("PKG_FACTURACION.SP_ANULAR_FACTURA", parameters, commandType: CommandType.StoredProcedure);
+            parameters.Add("p_resultado", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 50);
+            parameters.Add("p_mensaje", dbType: OracleDbType.Varchar2, direction: ParameterDirection.Output, size: 4000);
 
-            var resultado = parameters.Get<string>("p_resultado");
-            return new FacturacionResponse<bool>
+            try
             {
-                Resultado = resultado,
-                Mensaje = parameters.Get<string>("p_mensaje"),
-                Data = resultado == "EXITO"
-            };
+                using var connection = _connectionFactory.CreateConnection();
+                await connection.ExecuteAsync(new CommandDefinition("PKG_FACTURACION.SP_ANULAR_FACTURA", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+
+                string res = parameters.Get<string>("p_resultado");
+                var response = new ApiResponse<bool>
+                {
+                    Success = res == "EXITO",
+                    Message = parameters.Get<string>("p_mensaje"),
+                    Data = res == "EXITO"
+                };
+
+                LogOperacionExito(nameof(AnularFacturaAsync), response.Resultado);
+                return response;
+            }
+            catch (OracleException ex)
+            {
+                var mapped = MapearErrorOracle<bool>(ex, false);
+                return new ApiResponse<bool> { Success = false, Message = mapped.Mensaje, Data = false };
+            }
         }
 
-        public async Task<FacturaDTO?> ObtenerFacturaPorIdAsync(int facturaId)
+        public async Task<FacturaDTO?> ObtenerFacturaPorIdAsync(int facturaId, CancellationToken ct = default)
         {
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("p_factura_id", facturaId);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+
             using var connection = _connectionFactory.CreateConnection();
-            connection.Open();
+            return await connection.QueryFirstOrDefaultAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_OBTENER_FACTURA", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+        }
 
-            using var command = (OracleCommand)connection.CreateCommand();
-            command.CommandText = "PKG_FACTURACION.SP_OBTENER_FACTURA";
-            command.CommandType = CommandType.StoredProcedure;
+        public async Task<IEnumerable<FacturaDTO>> ObtenerFacturasPorClienteAsync(int clienteId, CancellationToken ct = default)
+        {
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("p_cliente_id", clienteId);
+            parameters.Add("p_estado", null);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
-            command.Parameters.Add("p_factura_id", OracleDbType.Int32).Value = facturaId;
-            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+            using var connection = _connectionFactory.CreateConnection();
+            return await connection.QueryAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_LISTAR_FACTURAS_CLIENTE", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+        }
 
-            using var reader = command.ExecuteReader();
-            if (reader.Read())
+        public async Task<IEnumerable<FacturaDTO>> ObtenerTodasAsync(string? estado = null, int? clienteId = null, string? nit = null, CancellationToken ct = default)
+        {
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("p_estado", estado);
+            parameters.Add("p_cliente_id", clienteId);
+            parameters.Add("p_nit", nit);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+            
+            using var connection = _connectionFactory.CreateConnection();
+            return await connection.QueryAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_LISTAR_TODAS_FACTURAS", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+        }
+
+        public async Task<bool> ActualizarEstadoFacturaAsync(int facturaId, string estado, IDbTransaction? transaction = null, CancellationToken ct = default)
+        {
+            // Deprecado: Oracle controla el estado financieramente.
+            _logger.LogWarning("Llamada a método deprecado: ActualizarEstadoFacturaAsync. FacturaId: {FacturaId}", facturaId);
+            return await Task.FromResult(true);
+        }
+
+        public async Task<FacturaDTO?> ObtenerDetallePorIdAsync(int facturaId, CancellationToken ct = default)
+        {
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("p_factura_id", facturaId);
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+
+            using var connection = _connectionFactory.CreateConnection();
+            var factura = await connection.QueryFirstOrDefaultAsync<FacturaDTO>(new CommandDefinition("PKG_FACTURACION.SP_OBTENER_DETALLE_FACTURA", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+            
+            if (factura != null)
             {
-                return MapReaderToFactura(reader);
+                var itemsParams = new OracleDynamicParameters();
+                itemsParams.Add("p_factura_id", facturaId);
+                itemsParams.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
+                
+                var items = await connection.QueryAsync<FacturaDetalleDTO>(new CommandDefinition("PKG_FACTURACION.SP_OBTENER_ITEMS_FACTURA", itemsParams, commandType: CommandType.StoredProcedure, cancellationToken: ct));
+                factura.Detalles = items.AsList();
             }
 
-            return null;
+            _logger.LogInformation("[FACTURA DETALLE ENRIQUECIDO] ID={FacturaId} Items={Count}", facturaId, factura?.Detalles?.Count ?? 0);
+            return factura;
         }
 
-        public async Task<IEnumerable<FacturaDTO>> ObtenerFacturasPorClienteAsync(int clienteId)
+        public async Task<IEnumerable<OrdenPendienteDTO>> ObtenerOrdenesPendientesAsync(CancellationToken ct = default)
         {
-            var facturas = new List<FacturaDTO>();
+            var parameters = new OracleDynamicParameters();
+            parameters.Add("p_cursor", dbType: OracleDbType.RefCursor, direction: ParameterDirection.Output);
 
             using var connection = _connectionFactory.CreateConnection();
-            connection.Open();
-
-            using var command = (OracleCommand)connection.CreateCommand();
-            command.CommandText = "PKG_FACTURACION.SP_LISTAR_FACTURAS_CLIENTE";
-            command.CommandType = CommandType.StoredProcedure;
-
-            command.Parameters.Add("p_cliente_id", OracleDbType.Int32).Value = clienteId;
-            command.Parameters.Add("p_estado", OracleDbType.Varchar2).Value = null;
-            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                facturas.Add(MapReaderToFactura(reader));
-            }
-
-            return facturas;
-        }
-
-        public async Task<bool> ActualizarEstadoFacturaAsync(int facturaId, string estado, IDbTransaction transaction = null)
-        {
-            var connection = transaction?.Connection ?? _connectionFactory.CreateConnection();
-            string sql = "UPDATE ALP_FACTURA SET FAC_ESTADO = :estado WHERE FAC_FACTURA = :facturaId";
+            var data = await connection.QueryAsync<OrdenPendienteDTO>(new CommandDefinition("PKG_FACTURACION.SP_LISTAR_ORDENES_FACTURABLES", parameters, commandType: CommandType.StoredProcedure, cancellationToken: ct));
             
-            var rows = await connection.ExecuteAsync(sql, new { estado, facturaId }, transaction: transaction);
-            return rows > 0;
-        }
-
-        public async Task<IEnumerable<FacturaDTO>> ObtenerTodasAsync(string estado = null)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            string sql = @"
-                SELECT FAC_FACTURA as FacturaId, VEN_ORDEN_VENTA as OrdenId, CLI_CLIENTE as ClienteId, 
-                       FAC_NUMERO as Numero, FAC_SERIE as Serie, FAC_SUBTOTAL as Subtotal, 
-                       FAC_IMPUESTOS as Impuestos, FAC_TOTAL as Total, FAC_ESTADO as Estado, 
-                       FAC_FECHA_EMISION as FechaEmision 
-                FROM ALP_FACTURA 
-                WHERE (:estado IS NULL OR FAC_ESTADO = :estado)
-                ORDER BY FAC_FECHA_EMISION DESC";
-            
-            return await connection.QueryAsync<FacturaDTO>(sql, new { estado });
-        }
-
-        public async Task<object?> ObtenerDetallePorIdAsync(int facturaId)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-            connection.Open();
-            
-            using var command = (OracleCommand)connection.CreateCommand();
-            command.CommandText = "PKG_FACTURACION.SP_OBTENER_FACTURA";
-            command.CommandType = CommandType.StoredProcedure;
-            command.Parameters.Add("p_factura_id", OracleDbType.Int32).Value = facturaId;
-            command.Parameters.Add("p_cursor", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
-
-            using var reader = command.ExecuteReader();
-            if (reader.Read())
-            {
-                return MapReaderToFactura(reader);
-            }
-            return null;
-        }
-
-        private FacturaDTO MapReaderToFactura(IDataReader reader)
-        {
-            return new FacturaDTO
-            {
-                FacturaId = reader.GetInt32(reader.GetOrdinal("FAC_FACTURA")),
-                OrdenId = reader.GetInt32(reader.GetOrdinal("VEN_ORDEN_VENTA")),
-                ClienteId = reader.GetInt32(reader.GetOrdinal("CLI_CLIENTE")),
-                Numero = reader.GetString(reader.GetOrdinal("FAC_NUMERO")),
-                Serie = reader.IsDBNull(reader.GetOrdinal("FAC_SERIE")) ? string.Empty : reader.GetString(reader.GetOrdinal("FAC_SERIE")),
-                Subtotal = reader.GetDecimal(reader.GetOrdinal("FAC_SUBTOTAL")),
-                Impuestos = reader.GetDecimal(reader.GetOrdinal("FAC_IMPUESTOS")),
-                Total = reader.GetDecimal(reader.GetOrdinal("FAC_TOTAL")),
-                Estado = reader.GetString(reader.GetOrdinal("FAC_ESTADO")),
-                FechaEmision = reader.GetDateTime(reader.GetOrdinal("FAC_FECHA_EMISION"))
-            };
+            return data;
         }
     }
 }

@@ -11,10 +11,12 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
     public class FacturacionController : ControllerBase
     {
         private readonly IFacturacionService _facturacionService;
+        private readonly Microsoft.Extensions.Logging.ILogger<FacturacionController> _logger;
 
-        public FacturacionController(IFacturacionService facturacionService)
+        public FacturacionController(IFacturacionService facturacionService, Microsoft.Extensions.Logging.ILogger<FacturacionController> logger)
         {
             _facturacionService = facturacionService;
+            _logger = logger;
         }
 
         [HttpGet("{id}")]
@@ -23,18 +25,18 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             var factura = await _facturacionService.ObtenerFacturaPorIdAsync(id);
             if (factura == null)
             {
-                return NotFound(new FacturacionResponse<FacturaDTO>
+                return NotFound(new ApiResponse<FacturaDTO>
                 {
-                    Resultado = "ERROR",
-                    Mensaje = "Factura no encontrada.",
+                    Success = false,
+                    Message = "Factura no encontrada.",
                     Data = null
                 });
             }
 
-            return Ok(new FacturacionResponse<FacturaDTO>
+            return Ok(new ApiResponse<FacturaDTO>
             {
-                Resultado = "EXITO",
-                Mensaje = "Consulta exitosa.",
+                Success = true,
+                Message = "Consulta exitosa.",
                 Data = factura
             });
         }
@@ -43,10 +45,10 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         public async Task<IActionResult> GetByCliente(int clienteId)
         {
             var facturas = await _facturacionService.ObtenerFacturasPorClienteAsync(clienteId);
-            return Ok(new FacturacionResponse<IEnumerable<FacturaDTO>>
+            return Ok(new ApiResponse<IEnumerable<FacturaDTO>>
             {
-                Resultado = "EXITO",
-                Mensaje = "Consulta exitosa.",
+                Success = true,
+                Message = "Consulta exitosa.",
                 Data = facturas
             });
         }
@@ -54,8 +56,9 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpPost("generar")]
         public async Task<IActionResult> Generar([FromBody] GenerarFacturaRequest request)
         {
+            _logger.LogInformation("[FACTURA REQUEST] {@Request}", request);
             var response = await _facturacionService.GenerarFacturaAsync(request);
-            if (!response.IsSuccess)
+            if (!response.Success)
             {
                 return BadRequest(response);
             }
@@ -65,26 +68,25 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpPut("anular/{id}")]
         public async Task<IActionResult> Anular(int id, [FromBody] AnularFacturaRequest request)
         {
-            // El ID del body debe coincidir con el de la URL por seguridad
+            _logger.LogInformation("[MOTIVO ANULACION] {Motivo}", request.Motivo);
             request.FacturaId = id;
             var response = await _facturacionService.AnularFacturaAsync(request);
-            if (!response.IsSuccess)
+            if (!response.Success)
             {
                 return BadRequest(response);
             }
             return Ok(response);
         }
 
-        // --- NUEVOS ENDPOINTS ---
-
         [HttpGet("listado")]
-        public async Task<IActionResult> GetAll([FromQuery] string? estado = null)
+        public async Task<IActionResult> GetAll([FromQuery] string? estado = null, [FromQuery] int? clienteId = null, [FromQuery] string? nit = null)
         {
-            var facturas = await _facturacionService.ObtenerTodasAsync(estado);
-            return Ok(new FacturacionResponse<IEnumerable<FacturaDTO>>
+            var facturas = await _facturacionService.ObtenerTodasAsync(estado, clienteId, nit);
+            _logger.LogInformation("FACTURAS RAW {@Data}", facturas);
+            return Ok(new ApiResponse<IEnumerable<FacturaDTO>>
             {
-                Resultado = "EXITO",
-                Mensaje = "Consulta general exitosa.",
+                Success = true,
+                Message = "Consulta general exitosa.",
                 Data = facturas
             });
         }
@@ -95,19 +97,33 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             var detalle = await _facturacionService.ObtenerDetallePorIdAsync(id);
             if (detalle == null)
             {
-                return NotFound(new FacturacionResponse<object>
+                return NotFound(new ApiResponse<object>
                 {
-                    Resultado = "ERROR",
-                    Mensaje = "Detalle de factura no encontrado.",
+                    Success = false,
+                    Message = "Detalle de factura no encontrado.",
                     Data = null
                 });
             }
 
-            return Ok(new FacturacionResponse<object>
+            _logger.LogInformation("[FACTURA RAW API] {@Factura}", detalle);
+            return Ok(new ApiResponse<FacturaDTO>
             {
-                Resultado = "EXITO",
-                Mensaje = "Detalle obtenido con éxito.",
+                Success = true,
+                Message = "Detalle obtenido con éxito.",
                 Data = detalle
+            });
+        }
+
+        [HttpGet("ordenes-pendientes")]
+        public async Task<IActionResult> GetOrdenesPendientes()
+        {
+            var ordenes = await _facturacionService.ObtenerOrdenesPendientesAsync();
+            _logger.LogInformation("[FACTURA ORDENES PENDIENTES] Count={Count}", ordenes.Count());
+            return Ok(new ApiResponse<IEnumerable<OrdenPendienteDTO>>
+            {
+                Success = true,
+                Message = "Órdenes pendientes obtenidas con éxito.",
+                Data = ordenes
             });
         }
     }
