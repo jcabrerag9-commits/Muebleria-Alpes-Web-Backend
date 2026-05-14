@@ -33,10 +33,11 @@ BEGIN
     END IF;
 
     -- 2. VALIDACIÓN DE CATÁLOGOS (Estado Inicial)
+    --    Búsqueda por ESO_NOMBRE para independizarse del valor de ESO_CODIGO
     BEGIN
         SELECT ESO_ESTADO_ORDEN INTO v_estado_id
         FROM ALP_ESTADO_ORDEN
-        WHERE ESO_CODIGO = 'PENDIENTE'
+        WHERE UPPER(ESO_NOMBRE) = 'PENDIENTE'
         FETCH FIRST 1 ROWS ONLY;
     EXCEPTION WHEN NO_DATA_FOUND THEN
         p_mensaje := 'Error de configuración: Estado PENDIENTE no encontrado.';
@@ -75,12 +76,20 @@ BEGIN
     -- 4. GENERACIÓN DE CABECERA
     v_impuestos := ROUND(v_subtotal * c_iva, 2);
     p_total     := v_subtotal + v_impuestos;
-    v_numero    := 'ORD-' || TO_CHAR(SYSDATE, 'YYYYMMDD-HH24MISS');
 
+    -- Insertar con número temporal; el definitivo se asigna tras obtener el IDENTITY
     INSERT INTO ALP_ORDEN_VENTA (CLI_CLIENTE, CVE_CANAL_VENTA, VEN_NUMERO_ORDEN,
                                   VEN_SUBTOTAL, VEN_IMPUESTOS, VEN_TOTAL, ESO_ESTADO_ORDEN)
-    VALUES (p_cliente_id, p_canal_venta, v_numero, v_subtotal, v_impuestos, p_total, v_estado_id)
+    VALUES (p_cliente_id, p_canal_venta,
+            'TMP-' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF3'),
+            v_subtotal, v_impuestos, p_total, v_estado_id)
     RETURNING VEN_ORDEN_VENTA INTO p_orden_id;
+
+    -- Número definitivo basado en el IDENTITY (siempre único, nunca NULL)
+    v_numero := 'ORD-' || TO_CHAR(SYSDATE, 'YYYY') || '-' || LPAD(p_orden_id, 5, '0');
+    UPDATE ALP_ORDEN_VENTA
+    SET    VEN_NUMERO_ORDEN = v_numero
+    WHERE  VEN_ORDEN_VENTA  = p_orden_id;
 
     -- 5. GENERACIÓN DE DETALLES Y RESERVA DE STOCK
     FOR i IN 1..p_productos_ids.COUNT LOOP

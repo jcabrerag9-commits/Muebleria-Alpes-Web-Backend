@@ -17,5 +17,6 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Services
         Task UpdatePreferenciasAsync(ClientePreferencia pref);
         
         Task ChangeStatusAsync(int clienteId, string nuevoEstado, string motivo, int? usuarioId);
+        Task EliminarLogicoAsync(int clienteId, string motivo, int? usuarioId);
     }
 }

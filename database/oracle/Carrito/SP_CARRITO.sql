@@ -317,10 +317,11 @@ BEGIN
     END IF;
 
     -- 2. VALIDACIÓN: Existencia de estados maestros
+    --    Búsqueda por ESO_NOMBRE para independizarse del valor de ESO_CODIGO
     BEGIN
         SELECT ESO_ESTADO_ORDEN INTO v_estado_id
         FROM ALP_ESTADO_ORDEN
-        WHERE ESO_CODIGO = 'PENDIENTE'
+        WHERE UPPER(ESO_NOMBRE) = 'PENDIENTE'
         FETCH FIRST 1 ROWS ONLY;
     EXCEPTION WHEN NO_DATA_FOUND THEN
         p_mensaje := 'Error de configuración: Estado PENDIENTE no encontrado.';
@@ -341,16 +342,24 @@ BEGIN
     -- Cálculos de totales
     SELECT NVL(SUM(CAD_SUBTOTAL), 0) INTO v_subtotal
     FROM ALP_CARRITO_DETALLE WHERE CAR_CARRITO = p_carrito_id;
-    
+
     v_impuestos := ROUND(v_subtotal * 0.12, 2);
     v_total := v_subtotal + v_impuestos;
-    v_numero := 'ORD-' || TO_CHAR(SYSDATE, 'YYYYMMDD') || '-' || LPAD(p_carrito_id, 6, '0');
 
-    -- Insertar Cabecera
+    -- Insertar Cabecera con número temporal único (basado en SYSTIMESTAMP)
+    -- El número definitivo se genera DESPUÉS usando el VEN_ORDEN_VENTA (IDENTITY).
     INSERT INTO ALP_ORDEN_VENTA (CLI_CLIENTE, CVE_CANAL_VENTA, VEN_NUMERO_ORDEN,
                                   VEN_SUBTOTAL, VEN_IMPUESTOS, VEN_TOTAL, ESO_ESTADO_ORDEN)
-    VALUES (v_cliente_id, p_canal_venta, v_numero, v_subtotal, v_impuestos, v_total, v_estado_id)
+    VALUES (v_cliente_id, p_canal_venta,
+            'TMP-' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISSFF3'),
+            v_subtotal, v_impuestos, v_total, v_estado_id)
     RETURNING VEN_ORDEN_VENTA INTO p_orden_id;
+
+    -- Generar número de orden definitivo a partir del ID (garantiza unicidad y no NULL)
+    v_numero := 'ORD-' || TO_CHAR(SYSDATE, 'YYYY') || '-' || LPAD(p_orden_id, 5, '0');
+    UPDATE ALP_ORDEN_VENTA
+    SET    VEN_NUMERO_ORDEN = v_numero
+    WHERE  VEN_ORDEN_VENTA  = p_orden_id;
 
     -- 4. DETALLE DE LA ORDEN (Migración desde Carrito)
     INSERT INTO ALP_ORDEN_VENTA_DETALLE (VEN_ORDEN_VENTA, PRO_PRODUCTO, VDE_CANTIDAD,

@@ -17,26 +17,26 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public string? Codigo { get; set; } // Generado por DB
         
         [Required, StringLength(50)]
-        public string NumeroDocumento { get; set; }
+        public string NumeroDocumento { get; set; } = string.Empty;
         
         [Required, StringLength(100)]
-        public string PrimerNombre { get; set; }
+        public string PrimerNombre { get; set; } = string.Empty;
         
-        public string SegundoNombre { get; set; }
+        public string? SegundoNombre { get; set; }
         
         [Required, StringLength(100)]
-        public string PrimerApellido { get; set; }
+        public string PrimerApellido { get; set; } = string.Empty;
         
-        public string SegundoApellido { get; set; }
+        public string? SegundoApellido { get; set; }
         
-        public string RazonSocial { get; set; }
+        public string? RazonSocial { get; set; }
         
         public DateTime? FechaNacimiento { get; set; }
         
         [RegularExpression("^[MFO]$")]
-        public string Genero { get; set; }
+        public string Genero { get; set; } = string.Empty;
         
-        public string PasswordPlano { get; set; } // Solo para creación
+        public string? PasswordPlano { get; set; } // Solo para creación
         
         public string Estado { get; set; } = "ACTIVO";
     }
@@ -48,7 +48,7 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public int ClienteId { get; set; }
         
         [Required, EmailAddress]
-        public string Email { get; set; }
+        public string Email { get; set; } = string.Empty;
         
         public string EsPrincipal { get; set; } = "N";
         public string Estado { get; set; } = "NO_VERIFICADO";
@@ -61,10 +61,10 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public int ClienteId { get; set; }
         
         [Required]
-        public string Tipo { get; set; } // CELULAR, CASA, TRABAJO
+        public string Tipo { get; set; } = string.Empty; // CELULAR, CASA, TRABAJO
         
         [Required, Phone]
-        public string Numero { get; set; }
+        public string Numero { get; set; } = string.Empty;
         
         public string EsPrincipal { get; set; } = "N";
         public string Estado { get; set; } = "ACTIVO";
@@ -80,13 +80,13 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public int CiudadId { get; set; }
         
         [Required]
-        public string Tipo { get; set; } // FACTURACION, ENVIO
+        public string Tipo { get; set; } = string.Empty; // FACTURACION, ENVIO
         
         [Required]
-        public string DireccionLinea1 { get; set; }
-        public string DireccionLinea2 { get; set; }
-        public string CodigoPostal { get; set; }
-        public string Referencia { get; set; }
+        public string DireccionLinea1 { get; set; } = string.Empty;
+        public string? DireccionLinea2 { get; set; }
+        public string? CodigoPostal { get; set; }
+        public string? Referencia { get; set; }
         public string EsPrincipal { get; set; } = "N";
         public string Estado { get; set; } = "ACTIVO";
     }
@@ -104,12 +104,12 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
     // DTO para vista detallada del cliente
     public class ClienteDetalleDto : Cliente
     {
-        public string NombreCompleto { get; set; }
-        public string TipoClienteNombre { get; set; }
-        public string TipoDocumentoNombre { get; set; }
+        public string NombreCompleto { get; set; } = string.Empty;
+        public string TipoClienteNombre { get; set; } = string.Empty;
+        public string TipoDocumentoNombre { get; set; } = string.Empty;
         public List<ClienteEmail> Emails { get; set; } = new();
         public List<ClienteTelefono> Telefonos { get; set; } = new();
         public List<ClienteDireccion> Direcciones { get; set; } = new();
-        public ClientePreferencia Preferencias { get; set; }
+        public ClientePreferencia Preferencias { get; set; } = new();
     }
 }
