@@ -14,7 +14,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         private readonly ILogger<PagoController> _logger;
 
         public PagoController(IPagoService pagoService, ILogger<PagoController> logger)
-        {
+        {   
             _pagoService = pagoService;
             _logger = logger;
         }
