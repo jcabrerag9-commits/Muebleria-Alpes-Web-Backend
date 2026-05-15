@@ -51,20 +51,47 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
         public async Task<decimal> GetPrecioVigenteAsync(int productoId, int monedaId)
         {
-            using var connection = _connectionFactory.CreateConnection();
-            return await connection.ExecuteScalarAsync<decimal>(
-                "SELECT PKG_PRECIOS.fn_obtener_precio_vigente_producto(:productoId, :monedaId) FROM DUAL",
-                new { productoId, monedaId }
-            );
+            try
+            {
+                using var connection = _connectionFactory.CreateConnection();
+                return await connection.ExecuteScalarAsync<decimal>(
+                    "SELECT PKG_PRECIOS.fn_obtener_precio_vigente_producto(:productoId, :monedaId) FROM DUAL",
+                    new { productoId, monedaId }
+                );
+            }
+            catch
+            {
+                // Fallback: PKG_PRECIOS no está compilado — consulta directa a ALP_PRODUCTO_PRECIO
+                using var connection = _connectionFactory.CreateConnection();
+                const string sql = @"
+                    SELECT PPR_PRECIO FROM (
+                        SELECT PPR_PRECIO FROM ALP_PRODUCTO_PRECIO
+                        WHERE PRO_PRODUCTO = :productoId
+                          AND MON_MONEDA   = :monedaId
+                          AND PPR_ESTADO   = 'ACTIVO'
+                          AND PPR_FECHA_INICIO <= SYSDATE
+                          AND (PPR_FECHA_FIN IS NULL OR PPR_FECHA_FIN >= SYSDATE)
+                        ORDER BY PPR_FECHA_INICIO DESC
+                    ) WHERE ROWNUM = 1";
+                return await connection.ExecuteScalarAsync<decimal>(sql, new { productoId, monedaId });
+            }
         }
 
         public async Task<decimal> GetPrecioFinalAsync(int productoId, int monedaId)
         {
-            using var connection = _connectionFactory.CreateConnection();
-            return await connection.ExecuteScalarAsync<decimal>(
-                "SELECT PKG_PRECIOS.fn_calcular_precio_final_producto(:productoId, :monedaId) FROM DUAL",
-                new { productoId, monedaId }
-            );
+            try
+            {
+                using var connection = _connectionFactory.CreateConnection();
+                return await connection.ExecuteScalarAsync<decimal>(
+                    "SELECT PKG_PRECIOS.fn_calcular_precio_final_producto(:productoId, :monedaId) FROM DUAL",
+                    new { productoId, monedaId }
+                );
+            }
+            catch
+            {
+                // Fallback: misma lógica que GetPrecioVigenteAsync — precio base sin descuentos
+                return await GetPrecioVigenteAsync(productoId, monedaId);
+            }
         }
 
         public async Task<IEnumerable<PrecioProducto>> GetHistorialByProductoAsync(int productoId)

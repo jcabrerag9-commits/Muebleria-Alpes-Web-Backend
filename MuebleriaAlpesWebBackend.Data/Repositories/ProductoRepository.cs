@@ -47,6 +47,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
             parameters.Add("p_desc_larga", producto.DescripcionLarga);
             parameters.Add("p_peso", producto.Peso);
             parameters.Add("p_es_configurable", producto.EsConfigurable);
+            parameters.Add("p_id_nuevo", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             await connection.ExecuteAsync("PKG_PRODUCTOS.sp_crear_producto", parameters, commandType: CommandType.StoredProcedure);
         }

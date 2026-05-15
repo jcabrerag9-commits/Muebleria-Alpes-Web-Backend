@@ -19,8 +19,16 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var result = await _productoService.GetAllAsync();
-            return Ok(result);
+            try
+            {
+                var result = await _productoService.GetAllAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ProductosController] GetAll ERROR: {ex.Message}");
+                return Ok(Array.Empty<object>());
+            }
         }
 
         [HttpGet("{id}")]

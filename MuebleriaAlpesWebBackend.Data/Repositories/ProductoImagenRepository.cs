@@ -115,7 +115,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
         public async Task<ProductoImagenDTO?> ObtenerPrincipalPorProductoAsync(int productoId, CancellationToken ct = default)
         {
-            try 
+            try
             {
                 var p = new OracleDynamicParameters();
                 p.Add("p_producto_id", productoId);
@@ -125,21 +125,54 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                 _logger.LogInformation("[IMAGEN REPOS] Buscando imagen principal para producto {ProductoId}...", productoId);
 
                 await connection.ExecuteAsync(new CommandDefinition("PKG_PRODUCTO_IMAGEN.sp_obtener_imagen_principal", p, commandType: CommandType.StoredProcedure, cancellationToken: ct));
-                
+
                 int? imagenId = p.Get<int?>("p_imagen_id");
                 if (imagenId.HasValue && imagenId > 0)
                 {
                     _logger.LogInformation("[IMAGEN REPOS] Imagen principal encontrada: ID {ImagenId}", imagenId);
                     return await ObtenerImagenAsync(imagenId.Value, ct);
                 }
-                
+
                 _logger.LogWarning("[IMAGEN REPOS] El producto {ProductoId} no tiene imagen principal.", productoId);
                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[IMAGEN REPOS] Error en ObtenerPrincipalPorProductoAsync: {Message}", ex.Message);
-                throw;
+                _logger.LogWarning("[IMAGEN REPOS] SP no disponible ({Message}). Intentando consulta directa...", ex.Message);
+                // Fallback: PKG_PRODUCTO_IMAGEN no está compilado — consulta directa a ALP_PRODUCTO_IMAGEN
+                try
+                {
+                    using var connection = _connectionFactory.CreateConnection();
+                    const string sql = @"
+                        SELECT PIM_PRODUCTO_IMAGEN AS ImagenId,
+                               PRO_PRODUCTO        AS ProductoId,
+                               PIM_URL             AS Url,
+                               PIM_TIPO            AS Tipo,
+                               PIM_ORDEN           AS Orden
+                        FROM (
+                            SELECT PIM_PRODUCTO_IMAGEN, PRO_PRODUCTO, PIM_URL, PIM_TIPO, PIM_ORDEN
+                            FROM ALP_PRODUCTO_IMAGEN
+                            WHERE PRO_PRODUCTO = :productoId
+                              AND PIM_TIPO     = 'PRINCIPAL'
+                              AND PIM_ESTADO   = 'ACTIVO'
+                            ORDER BY PIM_ORDEN ASC
+                        )
+                        WHERE ROWNUM = 1";
+
+                    var img = await connection.QueryFirstOrDefaultAsync<ProductoImagenDTO>(sql, new { productoId });
+                    if (img != null)
+                    {
+                        img.NombreArchivo = $"producto_{productoId}.jpg";
+                        img.ContentType   = "image/jpeg";
+                        _logger.LogInformation("[IMAGEN REPOS] Fallback: URL encontrada para producto {ProductoId}: {Url}", productoId, img.Url);
+                    }
+                    return img;
+                }
+                catch (Exception exFallback)
+                {
+                    _logger.LogError(exFallback, "[IMAGEN REPOS] Fallback directo también falló: {Message}", exFallback.Message);
+                    return null;
+                }
             }
         }
 

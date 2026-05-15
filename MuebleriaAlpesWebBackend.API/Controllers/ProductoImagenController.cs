@@ -106,10 +106,30 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpGet("producto/{productoId}/principal")]
         public async Task<IActionResult> GetPrincipal(int productoId)
         {
-            var imagen = await _service.ObtenerPrincipalPorProductoAsync(productoId);
-            if (imagen == null || imagen.Archivo == null) return NotFound();
+            try
+            {
+                var imagen = await _service.ObtenerPrincipalPorProductoAsync(productoId);
+                if (imagen == null) return NotFound();
 
-            return File(imagen.Archivo, imagen.ContentType);
+                // Imagen binaria en BLOB
+                if (imagen.Archivo != null && imagen.Archivo.Length > 0)
+                    return File(imagen.Archivo, imagen.ContentType);
+
+                // Imagen referenciada por URL externa
+                if (!string.IsNullOrWhiteSpace(imagen.Url)
+                    && imagen.Url != "LOCAL_BLOB"
+                    && (imagen.Url.StartsWith("http://") || imagen.Url.StartsWith("https://")))
+                {
+                    return Redirect(imagen.Url);
+                }
+
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ProductoImagenController] GetPrincipal({productoId}) ERROR: {ex.Message}");
+                return NotFound();
+            }
         }
 
         /// <summary>

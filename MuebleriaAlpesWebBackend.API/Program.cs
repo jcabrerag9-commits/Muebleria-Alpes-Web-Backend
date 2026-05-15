@@ -60,10 +60,6 @@ builder.Services.AddScoped<IColorService, ColorService>();
 builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 
-// Productos (Inventario)
-builder.Services.AddScoped<IProductoInventarioRepository, ProductoInventarioRepository>();
-builder.Services.AddScoped<IProductoInventarioService, ProductoInventarioService>();
-
 builder.Services.AddScoped<IInventarioRepository, InventarioRepository>();
 builder.Services.AddScoped<IInventarioService, InventarioService>();
 builder.Services.AddScoped<IProductoImagenRepository, ProductoImagenRepository>();
@@ -119,6 +115,42 @@ builder.Services.AddScoped<IReportesMarketingService, ReportesMarketingService>(
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// ── Promociones ───────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();
+builder.Services.AddScoped<IPromocionService, PromocionService>();
+
+// ── Devoluciones ──────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IDevolucionRepository, DevolucionRepository>();
+builder.Services.AddScoped<IDevolucionService, DevolucionService>();
+
+// ── Banners ───────────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IBannerRepository, BannerRepository>();
+builder.Services.AddScoped<IBannerService, BannerService>();
+
+// ── Recursos Humanos ─────────────────────────────────────────────────────────
+builder.Services.AddScoped<IEmpleadoRepository, EmpleadoRepository>();
+builder.Services.AddScoped<IEmpleadoService, EmpleadoService>();
+builder.Services.AddScoped<IDepartamentoRepository, DepartamentoRepository>();
+builder.Services.AddScoped<IDepartamentoService, DepartamentoService>();
+builder.Services.AddScoped<IAsistenciaRepository, AsistenciaRepository>();
+builder.Services.AddScoped<IAsistenciaService, AsistenciaService>();
+builder.Services.AddScoped<INominaRepository, NominaRepository>();
+builder.Services.AddScoped<INominaService, NominaService>();
+builder.Services.AddScoped<IEvaluacionRepository, EvaluacionRepository>();
+builder.Services.AddScoped<IEvaluacionService, EvaluacionService>();
+builder.Services.AddScoped<IPuestoRepository, PuestoRepository>();
+builder.Services.AddScoped<IPuestoService, PuestoService>();
+builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();
+builder.Services.AddScoped<ITurnoService, TurnoService>();
+builder.Services.AddScoped<IVacacionRepository, VacacionesRepository>();
+builder.Services.AddScoped<IVacacionesService, VacacionesService>();
+builder.Services.AddScoped<ITipoPagoRepository, TipoPagoRepository>();
+builder.Services.AddScoped<ITipoPagoService, TipoPagoService>();
+builder.Services.AddScoped<ITipoDeduccionRepository, TipoDeduccionRepository>();
+builder.Services.AddScoped<ITipoDeduccionService, TipoDeduccionService>();
+builder.Services.AddScoped<IAsignacionEmpleadoRepository, AsignacionEmpleadoRepository>();
+builder.Services.AddScoped<IAsignacionEmpleadoService, AsignacionEmpleadoService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMVC", policy =>
@@ -136,8 +168,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
+else
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowMVC");
 app.UseAuthorization();
 app.MapControllers();
