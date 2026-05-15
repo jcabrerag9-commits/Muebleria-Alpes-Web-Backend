@@ -39,15 +39,31 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpGet("vigente/{productoId}")]
         public async Task<IActionResult> GetVigente(int productoId, [FromQuery] int monedaId = 1)
         {
-            var precio = await _precioService.GetPrecioVigenteAsync(productoId, monedaId);
-            return Ok(new { productoId, monedaId, precio });
+            try
+            {
+                var precio = await _precioService.GetPrecioVigenteAsync(productoId, monedaId);
+                return Ok(new { productoId, monedaId, precio });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PreciosController] GetVigente ERROR: {ex.Message}");
+                return StatusCode(503, new { mensaje = "El módulo de precios no está disponible en este momento.", detalle = ex.Message });
+            }
         }
 
         [HttpGet("final/{productoId}")]
         public async Task<IActionResult> GetPrecioFinal(int productoId, [FromQuery] int monedaId = 1)
         {
-            var precioFinal = await _precioService.GetPrecioFinalAsync(productoId, monedaId);
-            return Ok(new { productoId, monedaId, precioFinal });
+            try
+            {
+                var precioFinal = await _precioService.GetPrecioFinalAsync(productoId, monedaId);
+                return Ok(new { productoId, monedaId, precioFinal });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PreciosController] GetPrecioFinal ERROR: {ex.Message}");
+                return StatusCode(503, new { mensaje = "El módulo de precios no está disponible en este momento.", detalle = ex.Message });
+            }
         }
 
         [HttpGet("historial/{productoId}")]

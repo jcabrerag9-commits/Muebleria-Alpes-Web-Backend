@@ -44,12 +44,38 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                         Descripcion = reader.IsDBNull(reader.GetOrdinal("TMU_DESCRIPCION")) ? null : reader.GetString(reader.GetOrdinal("TMU_DESCRIPCION"))
                     });
                 }
-                
+
                 LogOperacionExito(nameof(ListarTiposMuebleAsync), resultados.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al listar tipos de mueble.");
+                _logger.LogError(ex, "Error al listar tipos de mueble via SP. Intentando consulta directa...");
+                // Fallback: direct table query in case the stored procedure doesn't exist yet
+                try
+                {
+                    using var connection = _connectionFactory.CreateConnection();
+                    if (connection.State != ConnectionState.Open) connection.Open();
+
+                    using var cmd = (OracleCommand)connection.CreateCommand();
+                    cmd.CommandText = "SELECT TMU_TIPO_MUEBLE, TMU_NOMBRE, TMU_DESCRIPCION FROM ALP_TIPO_MUEBLE ORDER BY TMU_NOMBRE";
+                    cmd.CommandType = CommandType.Text;
+
+                    using var reader = cmd.ExecuteReader(CommandBehavior.CloseConnection);
+                    while (reader.Read())
+                    {
+                        resultados.Add(new CatalogoItemDTO
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("TMU_TIPO_MUEBLE")),
+                            Nombre = reader.GetString(reader.GetOrdinal("TMU_NOMBRE")),
+                            Descripcion = reader.IsDBNull(reader.GetOrdinal("TMU_DESCRIPCION")) ? null : reader.GetString(reader.GetOrdinal("TMU_DESCRIPCION"))
+                        });
+                    }
+                    _logger.LogInformation("Fallback directo: {Count} tipos de mueble obtenidos.", resultados.Count);
+                }
+                catch (Exception exFallback)
+                {
+                    _logger.LogError(exFallback, "Fallback directo también falló al listar tipos de mueble.");
+                }
             }
             return resultados;
         }
