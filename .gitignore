@@ -5,4 +5,5 @@ obj/
 *.suo
 database/
 docs/
+appsettings.Development.json
 
