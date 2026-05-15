@@ -46,7 +46,8 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                 Peso = d.PESO != null ? (decimal?)Convert.ToDecimal(d.PESO) : null,
                 EsConfigurable = d.ESCONFIGURABLE?.ToString() ?? "N",
                 Estado = d.ESTADO?.ToString() ?? "DESCONOCIDO",
-                TipoMueble = d.TIPOMUEBLEID != null ? (int)d.TIPOMUEBLEID : 0
+                TipoMueble = d.TIPOMUEBLEID != null ? (int)d.TIPOMUEBLEID : 0,
+                FechaRegistro = d.FECHAREGISTRO != null ? (DateTime)d.FECHAREGISTRO : DateTime.MinValue
             }).ToList();
 
             _logger.LogInformation("[AUDITORÍA] GetAllAsync recuperó {Count} productos desde PKG_PRODUCTOS", list.Count);
@@ -83,7 +84,8 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                 Peso = d.PESO != null ? (decimal?)Convert.ToDecimal(d.PESO) : null,
                 EsConfigurable = d.ESCONFIGURABLE?.ToString() ?? "N",
                 Estado = d.ESTADO?.ToString() ?? "DESCONOCIDO",
-                TipoMueble = (int)d.TIPOMUEBLEID
+                TipoMueble = (int)d.TIPOMUEBLEID,
+                FechaRegistro = d.FECHAREGISTRO != null ? (DateTime)d.FECHAREGISTRO : DateTime.MinValue
             };
         }
 
@@ -116,12 +118,15 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
 
         public async Task UpdateAsync(Producto producto)
         {
-            _logger.LogInformation("[AUDITORÍA] Iniciando UPDATE para Producto ID: {Id}. Datos: {Nombre}, TM: {TipoMueble}", producto.Id, producto.Nombre, producto.TipoMueble);
+            _logger.LogInformation("[AUDITORÍA-REPO] Iniciando UPDATE para Producto ID: {Id}. Payload recibido: Nombre={Nombre}, DescCorta={DescCorta}, Peso={Peso}, TipoMueble={TipoMueble}", 
+                producto.Id, producto.Nombre, producto.DescripcionCorta, producto.Peso, producto.TipoMueble);
+            
             try 
             {
                 using var connection = _connectionFactory.CreateConnection();
                 var parameters = new OracleDynamicParameters();
                 
+                // Mapeo exacto según PKG_PRODUCTOS.sp_actualizar_producto
                 parameters.Add("p_producto", producto.Id, OracleDbType.Int32, ParameterDirection.Input);
                 parameters.Add("p_nombre", producto.Nombre, OracleDbType.Varchar2, ParameterDirection.Input);
                 parameters.Add("p_desc_corta", producto.DescripcionCorta, OracleDbType.Varchar2, ParameterDirection.Input);
@@ -130,12 +135,15 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories
                 parameters.Add("p_es_configurable", producto.EsConfigurable, OracleDbType.Varchar2, ParameterDirection.Input);
                 parameters.Add("p_tipo_mueble", producto.TipoMueble, OracleDbType.Int32, ParameterDirection.Input);
 
+                _logger.LogInformation("[AUDITORÍA-REPO] Ejecutando SP PKG_PRODUCTOS.sp_actualizar_producto para ID {Id}", producto.Id);
+                
                 await connection.ExecuteAsync("PKG_PRODUCTOS.sp_actualizar_producto", parameters, commandType: CommandType.StoredProcedure);
-                _logger.LogInformation("[AUDITORÍA] UPDATE exitoso para ID: {Id}", producto.Id);
+                
+                _logger.LogInformation("[AUDITORÍA-REPO] UPDATE exitoso en base de datos para ID: {Id}", producto.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[ERROR CRÍTICO] Fallo en sp_actualizar_producto para ID {Id}: {Message}", producto.Id, ex.Message);
+                _logger.LogError(ex, "[ERROR CRÍTICO-REPO] Fallo al ejecutar sp_actualizar_producto para ID {Id}. Error: {Message}", producto.Id, ex.Message);
                 throw;
             }
         }
