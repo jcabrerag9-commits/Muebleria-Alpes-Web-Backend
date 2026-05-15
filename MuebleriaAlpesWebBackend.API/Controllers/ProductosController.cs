@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Services;
 using MuebleriaAlpesWebBackend.Domain.Models;
+using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
+using System;
 
 namespace MuebleriaAlpesWebBackend.API.Controllers
 {
@@ -10,15 +12,18 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
     public class ProductosController : ControllerBase
     {
         private readonly IProductoService _productoService;
+        private readonly ILogger<ProductosController> _logger;
 
-        public ProductosController(IProductoService productoService)
+        public ProductosController(IProductoService productoService, ILogger<ProductosController> logger)
         {
             _productoService = productoService;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
+            _logger.LogInformation("[API] GET /api/Productos solicitado");
             var result = await _productoService.GetAllAsync();
             return Ok(result);
         }
@@ -26,6 +31,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
+            _logger.LogInformation("[API] GET /api/Productos/{Id} solicitado", id);
             var result = await _productoService.GetByIdAsync(id);
             if (result == null) return NotFound();
             return Ok(result);
@@ -34,19 +40,50 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Producto producto)
         {
+            _logger.LogInformation("[API] POST /api/Productos solicitado para: {Nombre}", producto?.Nombre);
+            
             if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("[API] ModelState inválido para creación de producto");
                 return BadRequest(ModelState);
+            }
 
-            await _productoService.CreateAsync(producto);
-            return Ok();
+            try
+            {
+                await _productoService.CreateAsync(producto!);
+                return CreatedAtAction(nameof(GetById), new { id = producto!.Id }, producto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[API] Error creando producto");
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Producto producto)
         {
-            producto.Id = id;
-            await _productoService.UpdateAsync(producto);
-            return NoContent();
+            _logger.LogInformation("[API] PUT /api/Productos/{Id} recibido. Payload: {@Producto}", id, producto);
+            
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                _logger.LogWarning("[API] ModelState INVÁLIDO en Update: {Errors}", errors);
+                return BadRequest(new { error = "Validación fallida", details = errors });
+            }
+
+            try 
+            {
+                producto.Id = id;
+                await _productoService.UpdateAsync(producto);
+                _logger.LogInformation("[API] Update exitoso para ID: {Id}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[API] ERROR en Update para ID {Id}: {Message}", id, ex.Message);
+                return StatusCode(500, new { error = "Error interno en el servidor al actualizar", detail = ex.Message });
+            }
         }
 
         [HttpPatch("{id}/estado")]

@@ -43,9 +43,6 @@ builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IFacturacionRepository, FacturacionRepository>();
 builder.Services.AddScoped<IFacturacionService, FacturacionService>();
-
-// Productos (Genéricos)
-builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 
 // Categorías
@@ -74,7 +71,6 @@ builder.Services.AddScoped<IBodegaRepository, BodegaRepository>();
 builder.Services.AddScoped<IBodegaService, BodegaService>();
 builder.Services.AddScoped<IFinanzasRepository, FinanzasRepository>();
 builder.Services.AddScoped<IFinanzasService, FinanzasService>();
-builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IVarianteService, VarianteService>();
 builder.Services.AddScoped<IContenidoService, ContenidoService>();
 builder.Services.AddScoped<IPrecioService, PrecioService>();
