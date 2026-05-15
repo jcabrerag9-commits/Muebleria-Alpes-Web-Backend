@@ -1,34 +1,49 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace MuebleriaAlpesWebBackend.Domain.Models
 {
     public class Producto
     {
+        [JsonPropertyName("id")]
         public int Id { get; set; }
 
         [Required(ErrorMessage = "El tipo de mueble es obligatorio")]
+        [JsonPropertyName("tipoMueble")]
         public int TipoMueble { get; set; }
 
         [StringLength(50, ErrorMessage = "El SKU no puede exceder los 50 caracteres")]
+        [JsonPropertyName("sku")]
         public string? Sku { get; set; }
 
         [Required(ErrorMessage = "El nombre es obligatorio")]
         [StringLength(255, ErrorMessage = "El nombre no puede exceder los 255 caracteres")]
-        public string Nombre { get; set; }
+        [JsonPropertyName("nombre")]
+        public string Nombre { get; set; } = string.Empty;
 
         [StringLength(500, ErrorMessage = "La descripción corta no puede exceder los 500 caracteres")]
-        public string DescripcionCorta { get; set; }
+        [JsonPropertyName("descripcionCorta")]
+        public string? DescripcionCorta { get; set; }
 
-        public string DescripcionLarga { get; set; }
+        [JsonPropertyName("descripcionLarga")]
+        public string? DescripcionLarga { get; set; }
 
         [Range(0, 10000, ErrorMessage = "El peso debe ser un valor positivo")]
+        [JsonPropertyName("peso")]
         public decimal? Peso { get; set; }
 
         [RegularExpression("^[SN]$")]
+        [JsonPropertyName("esConfigurable")]
         public string EsConfigurable { get; set; } = "N";
 
+        [JsonPropertyName("estado")]
         public string Estado { get; set; } = "BORRADOR";
+
+        [JsonPropertyName("publicado")]
         public string Publicado { get; set; } = "N";
+
+        [JsonPropertyName("fechaRegistro")]
+        public DateTime FechaRegistro { get; set; }
     }
 
     public class DimensionProducto

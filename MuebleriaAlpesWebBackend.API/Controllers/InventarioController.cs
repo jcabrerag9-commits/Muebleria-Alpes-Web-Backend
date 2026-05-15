@@ -52,6 +52,17 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
             });
         }
 
+        [HttpGet("bodegas")]
+        public async Task<IActionResult> GetBodegas()
+        {
+            var bodegas = await _inventarioService.ObtenerBodegasAsync();
+            return Ok(new InventarioResponse<IEnumerable<BodegaDTO>>
+            {
+                Resultado = "EXITO",
+                Data = bodegas
+            });
+        }
+
         [HttpGet("movimientos")]
         public async Task<IActionResult> GetMovimientosGlobales([FromQuery] MovimientoFiltroRequest filtro)
         {

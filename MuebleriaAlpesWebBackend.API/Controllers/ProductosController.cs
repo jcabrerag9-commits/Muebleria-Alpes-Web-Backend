@@ -40,22 +40,26 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Producto producto)
         {
-            _logger.LogInformation("[API] POST /api/Productos solicitado para: {Nombre}", producto?.Nombre);
+            var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
+            _logger.LogInformation("[AUDITORÍA-API] POST /api/Productos solicitado a las {Time} para: {Nombre}", timestamp, producto?.Nombre);
             
+            if (producto == null) return BadRequest("El producto no puede ser nulo");
+
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("[API] ModelState inválido para creación de producto");
+                _logger.LogWarning("[AUDITORÍA-API] ModelState inválido para creación de producto");
                 return BadRequest(ModelState);
             }
 
             try
             {
-                await _productoService.CreateAsync(producto!);
-                return CreatedAtAction(nameof(GetById), new { id = producto!.Id }, producto);
+                await _productoService.CreateAsync(producto);
+                _logger.LogInformation("[AUDITORÍA-API] Producto creado exitosamente con ID: {Id}", producto.Id);
+                return CreatedAtAction(nameof(GetById), new { id = producto.Id }, producto);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[API] Error creando producto");
+                _logger.LogError(ex, "[ERROR-API] Fallo al crear producto: {Message}", ex.Message);
                 return StatusCode(500, ex.Message);
             }
         }
@@ -63,26 +67,36 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] Producto producto)
         {
-            _logger.LogInformation("[API] PUT /api/Productos/{Id} recibido. Payload: {@Producto}", id, producto);
+            _logger.LogInformation("[AUDITORÍA-API] PUT /api/Productos/{Id} recibido.", id);
+            
+            if (producto == null)
+            {
+                _logger.LogWarning("[AUDITORÍA-API] El objeto producto recibido es NULO para ID: {Id}", id);
+                return BadRequest(new { error = "El cuerpo de la solicitud no puede estar vacío." });
+            }
+
+            _logger.LogInformation("[AUDITORÍA-API] Datos vinculados (Binding): Nombre='{Nombre}', TipoMueble={TM}, Peso={Peso}, Estado='{Estado}'", 
+                producto.Nombre, producto.TipoMueble, producto.Peso, producto.Estado);
             
             if (!ModelState.IsValid)
             {
                 var errors = string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                _logger.LogWarning("[API] ModelState INVÁLIDO en Update: {Errors}", errors);
+                _logger.LogWarning("[AUDITORÍA-API] ModelState INVÁLIDO para ID {Id}: {Errors}", id, errors);
                 return BadRequest(new { error = "Validación fallida", details = errors });
             }
 
             try 
             {
                 producto.Id = id;
+                _logger.LogInformation("[AUDITORÍA-API] Llamando al servicio para actualizar ID: {Id}", id);
                 await _productoService.UpdateAsync(producto);
-                _logger.LogInformation("[API] Update exitoso para ID: {Id}", id);
+                _logger.LogInformation("[AUDITORÍA-API] Proceso completado con éxito para ID: {Id}", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[API] ERROR en Update para ID {Id}: {Message}", id, ex.Message);
-                return StatusCode(500, new { error = "Error interno en el servidor al actualizar", detail = ex.Message });
+                _logger.LogError(ex, "[ERROR-API] Excepción al actualizar producto {Id}: {Message}", id, ex.Message);
+                return StatusCode(500, new { error = "Error interno al procesar la actualización", detail = ex.Message });
             }
         }
 
