@@ -15,12 +15,14 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
     public class ProductoImagenController : ControllerBase
     {
         private readonly IProductoImagenService _service;
+        private readonly ILogger<ProductoImagenController> _logger;
         private readonly string[] ALLOWED_EXTENSIONS = { ".jpg", ".jpeg", ".png", ".webp" };
         private readonly string[] ALLOWED_MIME_TYPES = { "image/jpeg", "image/png", "image/webp" };
 
-        public ProductoImagenController(IProductoImagenService service)
+        public ProductoImagenController(IProductoImagenService service, ILogger<ProductoImagenController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         /// <summary>
@@ -74,11 +76,17 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
+            _logger.LogInformation("[API-IMAGEN] GET /api/ProductoImagen/{Id} solicitado", id);
             var imagen = await _service.ObtenerImagenAsync(id);
-            if (imagen == null || imagen.Archivo == null) return NotFound();
+            if (imagen == null || imagen.Archivo == null) 
+            {
+                _logger.LogWarning("[API-IMAGEN] Imagen {Id} no encontrada o sin binario.", id);
+                return NotFound();
+            }
 
+            _logger.LogInformation("[API-IMAGEN] Sirviendo imagen {Id}. Filename: {Name}, Size: {Size} bytes", id, imagen.NombreArchivo, imagen.Archivo.Length);
             Response.Headers.Append("Content-Disposition", $"inline; filename=\"{imagen.NombreArchivo}\"");
-            return File(imagen.Archivo, imagen.ContentType);
+            return File(imagen.Archivo, imagen.ContentType ?? "image/jpeg");
         }
 
         /// <summary>
@@ -89,7 +97,9 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpGet("producto/{productoId}")]
         public async Task<IActionResult> GetByProducto(int productoId)
         {
+            _logger.LogInformation("[API-IMAGEN] GET listado para producto {Id} solicitado", productoId);
             var imagenes = await _service.ListarPorProductoAsync(productoId);
+            _logger.LogInformation("[API-IMAGEN] Se retornan {Count} imágenes para producto {Id}", imagenes?.Count() ?? 0, productoId);
             return Ok(new ApiResponse<IEnumerable<ProductoImagenListadoDTO>>
             {
                 Success = true,
@@ -106,10 +116,17 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         [HttpGet("producto/{productoId}/principal")]
         public async Task<IActionResult> GetPrincipal(int productoId)
         {
+            _logger.LogInformation("[API-IMAGEN] GET principal para producto {Id} solicitado", productoId);
             var imagen = await _service.ObtenerPrincipalPorProductoAsync(productoId);
-            if (imagen == null || imagen.Archivo == null) return NotFound();
+            
+            if (imagen == null || imagen.Archivo == null) 
+            {
+                _logger.LogWarning("[API-IMAGEN] No hay imagen principal para producto {Id}", productoId);
+                return NotFound();
+            }
 
-            return File(imagen.Archivo, imagen.ContentType);
+            _logger.LogInformation("[API-IMAGEN] Sirviendo principal para producto {Id}. Size: {Size} bytes", productoId, imagen.Archivo.Length);
+            return File(imagen.Archivo, imagen.ContentType ?? "image/jpeg");
         }
 
         /// <summary>

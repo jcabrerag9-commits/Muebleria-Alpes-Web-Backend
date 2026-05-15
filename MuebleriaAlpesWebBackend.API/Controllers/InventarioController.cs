@@ -4,89 +4,9 @@ using MuebleriaAlpesWebBackend.Domain.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+
 namespace MuebleriaAlpesWebBackend.API.Controllers
 {
-/*
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductoController : ControllerBase
-    {
-        private readonly IProductoService _productoService;
-
-        public ProductoController(IProductoService productoService)
-        {
-            _productoService = productoService;
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            try 
-            {
-                var productos = await _productoService.ObtenerTodosAsync();
-                return Ok(new InventarioResponse<IEnumerable<ProductoDTO>>
-                {
-                    Success = true,
-                    Message = "Listado obtenido",
-                    Data = productos
-                });
-            }
-            catch (System.Exception ex)
-            {
-                // Diagnóstico Crítico Fase Hotfix - Ahora estandarizado H.4.1
-                return StatusCode(500, new ApiResponse<object>
-                { 
-                    Success = false, 
-                    Message = ex.Message,
-                    Errores = new List<string> { ex.Message, ex.InnerException?.Message ?? "" }
-                });
-            }
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var producto = await _productoService.ObtenerProductoPorIdAsync(id);
-            if (producto == null) return NotFound();
-            return Ok(new InventarioResponse<ProductoDTO>
-            {
-                Resultado = "EXITO",
-                Data = producto
-            });
-        }
-
-        [HttpPost("crear")]
-        public async Task<IActionResult> Crear([FromBody] CrearProductoRequest request)
-        {
-            var response = await _productoService.CrearProductoAsync(request);
-            if (!response.IsSuccess) return BadRequest(response);
-            return Ok(response);
-        }
-
-        [HttpPost("variante")]
-        public async Task<IActionResult> CrearVariante([FromBody] CrearVarianteRequest request)
-        {
-            var response = await _productoService.CrearVarianteAsync(request);
-            if (!response.IsSuccess) return BadRequest(response);
-            return Ok(response);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Actualizar(int id, [FromBody] ActualizarProductoRequest request)
-        {
-            System.Console.WriteLine($"[BACKEND API] RECIBIDO PUT /api/Producto/{id}");
-            System.Console.WriteLine($"[BACKEND API] Payload -> Nombre: {request?.Nombre}, Peso: {request?.Peso}");
-
-            var response = await _productoService.ActualizarProductoAsync(id, request);
-            
-            System.Console.WriteLine($"[BACKEND API] Respuesta de Service -> IsSuccess: {response.IsSuccess}, Mensaje: {response.Mensaje}");
-            
-            if (!response.IsSuccess) return BadRequest(response);
-            return Ok(response);
-        }
-    }
-*/
-
     [ApiController]
     [Route("api/[controller]")]
     public class InventarioController : ControllerBase
