@@ -1,7 +1,9 @@
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Services;
 using MuebleriaAlpesWebBackend.Domain.Models;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System;
 using System.Threading.Tasks;
 
 namespace MuebleriaAlpesWebBackend.Business.Services
@@ -9,20 +11,38 @@ namespace MuebleriaAlpesWebBackend.Business.Services
     public class ProductoService : IProductoService
     {
         private readonly IProductoRepository _productoRepository;
+        private readonly ILogger<ProductoService> _logger;
 
-        public ProductoService(IProductoRepository productoRepository)
+        public ProductoService(IProductoRepository productoRepository, ILogger<ProductoService> logger)
         {
             _productoRepository = productoRepository;
+            _logger = logger;
         }
 
-        public async Task<IEnumerable<Producto>> GetAllAsync() => await _productoRepository.GetAllAsync();
-        public async Task<Producto> GetByIdAsync(int id) => await _productoRepository.GetByIdAsync(id);
+        public async Task<IEnumerable<Producto>> GetAllAsync()
+        {
+            _logger.LogInformation("[SERVICE] Solicitando todos los productos");
+            return await _productoRepository.GetAllAsync();
+        }
+
+        public async Task<Producto> GetByIdAsync(int id)
+        {
+            _logger.LogInformation("[SERVICE] Buscando producto por ID: {Id}", id);
+            return await _productoRepository.GetByIdAsync(id);
+        }
+
         public async Task CreateAsync(Producto producto)
         {
-            if (producto.Nombre.Length < 3)
+            _logger.LogInformation("[SERVICE] Validando creación de producto: {Nombre}", producto.Nombre);
+            
+            if (string.IsNullOrWhiteSpace(producto.Nombre) || producto.Nombre.Length < 3)
+            {
+                _logger.LogWarning("[SERVICE] Validación fallida: Nombre demasiado corto");
                 throw new ArgumentException("El nombre del producto debe tener al menos 3 caracteres.");
+            }
 
             await _productoRepository.CreateAsync(producto);
+            _logger.LogInformation("[SERVICE] Producto creado exitosamente con ID asignado: {Id}", producto.Id);
         }
         public async Task UpdateAsync(Producto producto) => await _productoRepository.UpdateAsync(producto);
         public async Task ChangeStatusAsync(int id, string estado) => await _productoRepository.ChangeStatusAsync(id, estado);
