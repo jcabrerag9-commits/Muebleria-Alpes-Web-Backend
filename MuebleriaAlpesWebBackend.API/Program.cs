@@ -43,7 +43,6 @@ builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IFacturacionRepository, FacturacionRepository>();
 builder.Services.AddScoped<IFacturacionService, FacturacionService>();
-builder.Services.AddScoped<IProductoService, ProductoService>();
 
 // Categorías
 builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
@@ -57,9 +56,9 @@ builder.Services.AddScoped<IColorService, ColorService>();
 builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 
-// Productos (Inventario)
-builder.Services.AddScoped<IProductoInventarioRepository, ProductoInventarioRepository>();
-builder.Services.AddScoped<IProductoInventarioService, ProductoInventarioService>();
+// Productos
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IProductoService, ProductoService>();
 
 builder.Services.AddScoped<IInventarioRepository, InventarioRepository>();
 builder.Services.AddScoped<IInventarioService, InventarioService>();
@@ -89,9 +88,7 @@ builder.Services.AddScoped<ICajaService, CajaService>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 
-builder.Services.AddScoped<OracleConnectionFactory>();
-
-// Seguridad y autenticación
+// ── Seguridad y autenticación ────────────────────────────────────────────────
 builder.Services.AddScoped<ISeguridadRepository, SeguridadRepository>();
 builder.Services.AddScoped<ISeguridadService, SeguridadService>();
 builder.Services.AddScoped<IAutenticacionRepository, AutenticacionRepository>();
@@ -115,6 +112,40 @@ builder.Services.AddScoped<IReportesMarketingService, ReportesMarketingService>(
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// ── Recursos Humanos ──────────────────────────────────────────────────────────
+builder.Services.AddScoped<IDepartamentoRepository, DepartamentoRepository>();
+builder.Services.AddScoped<IDepartamentoService, DepartamentoService>();
+builder.Services.AddScoped<IPuestoRepository, PuestoRepository>();
+builder.Services.AddScoped<IPuestoService, PuestoService>();
+builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();
+builder.Services.AddScoped<ITurnoService, TurnoService>();
+builder.Services.AddScoped<ITipoPagoRepository, TipoPagoRepository>();
+builder.Services.AddScoped<ITipoPagoService, TipoPagoService>();
+builder.Services.AddScoped<ITipoDeduccionRepository, TipoDeduccionRepository>();
+builder.Services.AddScoped<ITipoDeduccionService, TipoDeduccionService>();
+builder.Services.AddScoped<IEmpleadoRepository, EmpleadoRepository>();
+builder.Services.AddScoped<IEmpleadoService, EmpleadoService>();
+builder.Services.AddScoped<IAsignacionEmpleadoRepository, AsignacionEmpleadoRepository>();
+builder.Services.AddScoped<IAsignacionEmpleadoService, AsignacionEmpleadoService>();
+builder.Services.AddScoped<IAsistenciaRepository, AsistenciaRepository>();
+builder.Services.AddScoped<IAsistenciaService, AsistenciaService>();
+builder.Services.AddScoped<IVacacionRepository, VacacionesRepository>();
+builder.Services.AddScoped<IVacacionesService, VacacionesService>();
+builder.Services.AddScoped<INominaRepository, NominaRepository>();
+builder.Services.AddScoped<INominaService, NominaService>();
+builder.Services.AddScoped<IEvaluacionRepository, EvaluacionRepository>();
+builder.Services.AddScoped<IEvaluacionService, EvaluacionService>();
+
+// ── Promociones ───────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IPromocionRepository, PromocionRepository>();
+builder.Services.AddScoped<IPromocionService, PromocionService>();
+builder.Services.AddScoped<IBannerRepository, BannerRepository>();
+builder.Services.AddScoped<IBannerService, BannerService>();
+
+// ── Devoluciones ──────────────────────────────────────────────────────────────
+builder.Services.AddScoped<IDevolucionRepository, DevolucionRepository>();
+builder.Services.AddScoped<IDevolucionService, DevolucionService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowMVC", policy =>
@@ -126,6 +157,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<MuebleriaAlpesWebBackend.API.Middleware.ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

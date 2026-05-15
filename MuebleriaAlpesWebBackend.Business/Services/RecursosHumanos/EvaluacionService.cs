@@ -1,4 +1,4 @@
-﻿using MuebleriaAlpesWebBackend.Domain.DTOs.Common;
+using MuebleriaAlpesWebBackend.Domain.DTOs.Common;
 using MuebleriaAlpesWebBackend.Domain.DTOs.RecursosHumanos.Evaluacion;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories.RecursosHumanos;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Services.RecursosHumanos;
@@ -33,7 +33,7 @@ namespace MuebleriaAlpesWebBackend.Business.Services.RecursosHumanos
             return await _repository.ActualizarAsync(id, dto);
         }
 
-        public Task<EvaluacionResponseDTO> ObtenerPorIdAsync(int id)
+        public Task<EvaluacionResponseDTO?> ObtenerPorIdAsync(int id)
         {
             return _repository.ObtenerPorIdAsync(id);
         }
