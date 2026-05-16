@@ -3,3 +3,7 @@ bin/
 obj/
 *.user
 *.suo
+database/
+docs/
+appsettings.Development.json
+

@@ -1,0 +1,9 @@
+SET LINESIZE 200;
+SET PAGESIZE 100;
+COL COLUMN_NAME FOR A30;
+COL DATA_TYPE FOR A20;
+SELECT column_name, data_type 
+FROM all_tab_columns 
+WHERE table_name = 'ALP_TRANSACCION_LOG' 
+ORDER BY column_id;
+EXIT;

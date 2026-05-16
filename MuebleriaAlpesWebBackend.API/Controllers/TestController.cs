@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MuebleriaAlpesWebBackend.Data.Connection;
 using MuebleriaAlpesWebBackend.Domain.Interfaces.Services;
 
@@ -24,7 +24,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
 
                 return Ok(new
                 {
-                    mensaje = "Conexión exitosa con Oracle",
+                    mensaje = "Conexi�n exitosa con Oracle",
                     resultado = resultado
                 });
             }
