@@ -70,12 +70,50 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories.Envios
             using var connection = (OracleConnection)_connectionFactory.CreateConnection();
             await connection.OpenAsync();
 
-            using var command = CrearComando(connection, "PKG_ENVIOS.SP_CAMBIAR_ESTADO_ENVIO");
+            // 1) Actualizar el estado del envío
+            const string sqlEnvio = @"
+                UPDATE ALP_ENVIO
+                   SET ENV_ESTADO = :p_env_estado
+                 WHERE ENV_ENVIO  = :p_env_envio";
 
-            command.Parameters.Add("p_env_envio", OracleDbType.Int32).Value = request.EnvioId;
-            command.Parameters.Add("p_env_estado", OracleDbType.Varchar2).Value = request.Estado;
+            using var cmdEnvio = new OracleCommand(sqlEnvio, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName  = true
+            };
+            cmdEnvio.Parameters.Add("p_env_estado", OracleDbType.Varchar2).Value = request.Estado;
+            cmdEnvio.Parameters.Add("p_env_envio",  OracleDbType.Int32).Value    = request.EnvioId;
+            await cmdEnvio.ExecuteNonQueryAsync();
 
-            await command.ExecuteNonQueryAsync();
+            // 2) Sincronizar el estado de la orden según el estado del envío
+            //    EN_TRANSITO / EN_REPARTO → ESO_ESTADO_ORDEN = 3 (Enviado)
+            //    ENTREGADO               → ESO_ESTADO_ORDEN = 4 (Entregado)
+            var nuevoEstadoOrden = request.Estado.ToUpperInvariant() switch
+            {
+                "EN_TRANSITO" or "EN_REPARTO" => (int?)3,
+                "ENTREGADO"                   => (int?)4,
+                _                             => (int?)null
+            };
+
+            if (nuevoEstadoOrden.HasValue)
+            {
+                const string sqlOrden = @"
+                    UPDATE ALP_ORDEN_VENTA
+                       SET ESO_ESTADO_ORDEN = :p_nuevo_estado
+                     WHERE VEN_ORDEN_VENTA  = (
+                               SELECT VEN_ORDEN_VENTA FROM ALP_ENVIO
+                                WHERE ENV_ENVIO = :p_env_envio2
+                           )";
+
+                using var cmdOrden = new OracleCommand(sqlOrden, connection)
+                {
+                    CommandType = CommandType.Text,
+                    BindByName  = true
+                };
+                cmdOrden.Parameters.Add("p_nuevo_estado", OracleDbType.Int32).Value = nuevoEstadoOrden.Value;
+                cmdOrden.Parameters.Add("p_env_envio2",   OracleDbType.Int32).Value = request.EnvioId;
+                await cmdOrden.ExecuteNonQueryAsync();
+            }
 
             return true;
         }
@@ -85,13 +123,44 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories.Envios
             using var connection = (OracleConnection)_connectionFactory.CreateConnection();
             await connection.OpenAsync();
 
-            using var command = CrearComando(connection, "PKG_ENVIOS.SP_CONFIRMAR_ENTREGA_ENVIO");
+            // 1) Marcar envío como ENTREGADO con fecha real
+            const string sqlEnvio = @"
+                UPDATE ALP_ENVIO
+                   SET ENV_ESTADO              = 'ENTREGADO',
+                       ENV_FECHA_ENTREGA_REAL  = NVL(:p_fecha, CURRENT_TIMESTAMP),
+                       ENV_OBSERVACIONES       = CASE
+                                                     WHEN :p_obs IS NULL            THEN ENV_OBSERVACIONES
+                                                     WHEN ENV_OBSERVACIONES IS NULL  THEN :p_obs
+                                                     ELSE ENV_OBSERVACIONES || ' | ' || :p_obs
+                                                 END
+                 WHERE ENV_ENVIO = :p_env_envio";
 
-            command.Parameters.Add("p_env_envio", OracleDbType.Int32).Value = request.EnvioId;
-            command.Parameters.Add("p_env_fecha_entrega_real", OracleDbType.TimeStamp).Value = ValorOdbc(request.FechaEntregaReal);
-            command.Parameters.Add("p_env_observaciones", OracleDbType.Varchar2).Value = ValorOdbc(request.Observaciones);
+            using var cmdEnvio = new OracleCommand(sqlEnvio, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName  = true
+            };
+            cmdEnvio.Parameters.Add("p_fecha",    OracleDbType.TimeStamp).Value = ValorOdbc(request.FechaEntregaReal);
+            cmdEnvio.Parameters.Add("p_obs",       OracleDbType.Varchar2).Value  = ValorOdbc(request.Observaciones);
+            cmdEnvio.Parameters.Add("p_env_envio", OracleDbType.Int32).Value     = request.EnvioId;
+            await cmdEnvio.ExecuteNonQueryAsync();
 
-            await command.ExecuteNonQueryAsync();
+            // 2) Actualizar la orden a Entregado (ESO_ESTADO_ORDEN = 4)
+            const string sqlOrden = @"
+                UPDATE ALP_ORDEN_VENTA
+                   SET ESO_ESTADO_ORDEN = 4
+                 WHERE VEN_ORDEN_VENTA  = (
+                           SELECT VEN_ORDEN_VENTA FROM ALP_ENVIO
+                            WHERE ENV_ENVIO = :p_env_envio2
+                       )";
+
+            using var cmdOrden = new OracleCommand(sqlOrden, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName  = true
+            };
+            cmdOrden.Parameters.Add("p_env_envio2", OracleDbType.Int32).Value = request.EnvioId;
+            await cmdOrden.ExecuteNonQueryAsync();
 
             return true;
         }
@@ -145,24 +214,31 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories.Envios
             using var connection = (OracleConnection)_connectionFactory.CreateConnection();
             await connection.OpenAsync();
 
-            using var command = CrearComando(connection, "PKG_ENVIOS.SP_LISTAR_ENVIOS_POR_ORDEN");
+            const string sql = @"
+                SELECT e.ENV_ENVIO,
+                       e.VEN_ORDEN_VENTA,
+                       e.ENV_NUMERO_GUIA,
+                       e.ENV_TRANSPORTISTA,
+                       e.ENV_COSTO_ENVIO,
+                       e.ENV_FECHA_ENVIO,
+                       e.ENV_FECHA_ENTREGA_ESTIMADA,
+                       e.ENV_FECHA_ENTREGA_REAL,
+                       e.ENV_ESTADO
+                  FROM ALP_ENVIO e
+                 WHERE e.VEN_ORDEN_VENTA = :p_ven_orden_venta
+                 ORDER BY e.ENV_ENVIO DESC";
 
+            using var command = new OracleCommand(sql, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true
+            };
             command.Parameters.Add("p_ven_orden_venta", OracleDbType.Int32).Value = ordenVentaId;
 
-            var cursorParam = new OracleParameter("p_resultado", OracleDbType.RefCursor)
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                Direction = ParameterDirection.Output
-            };
-            command.Parameters.Add(cursorParam);
-
-            await command.ExecuteNonQueryAsync();
-
-            using var refCursor = (OracleRefCursor)cursorParam.Value;
-            using var reader = refCursor.GetDataReader();
-
-            while (reader.Read())
-            {
-                lista.Add(MapearEnvioResumen(reader));
+                lista.Add(MapearEnvioResumen((OracleDataReader)reader));
             }
 
             return lista;
@@ -175,24 +251,31 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories.Envios
             using var connection = (OracleConnection)_connectionFactory.CreateConnection();
             await connection.OpenAsync();
 
-            using var command = CrearComando(connection, "PKG_ENVIOS.SP_LISTAR_ENVIOS_POR_ESTADO");
+            const string sql = @"
+                SELECT e.ENV_ENVIO,
+                       e.VEN_ORDEN_VENTA,
+                       e.ENV_NUMERO_GUIA,
+                       e.ENV_TRANSPORTISTA,
+                       e.ENV_COSTO_ENVIO,
+                       e.ENV_FECHA_ENVIO,
+                       e.ENV_FECHA_ENTREGA_ESTIMADA,
+                       e.ENV_FECHA_ENTREGA_REAL,
+                       e.ENV_ESTADO
+                  FROM ALP_ENVIO e
+                 WHERE e.ENV_ESTADO = :p_env_estado
+                 ORDER BY e.ENV_ENVIO DESC";
 
+            using var command = new OracleCommand(sql, connection)
+            {
+                CommandType = CommandType.Text,
+                BindByName = true
+            };
             command.Parameters.Add("p_env_estado", OracleDbType.Varchar2).Value = estado;
 
-            var cursorParam = new OracleParameter("p_resultado", OracleDbType.RefCursor)
+            using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                Direction = ParameterDirection.Output
-            };
-            command.Parameters.Add(cursorParam);
-
-            await command.ExecuteNonQueryAsync();
-
-            using var refCursor = (OracleRefCursor)cursorParam.Value;
-            using var reader = refCursor.GetDataReader();
-
-            while (reader.Read())
-            {
-                lista.Add(MapearEnvioResumen(reader));
+                lista.Add(MapearEnvioResumen((OracleDataReader)reader));
             }
 
             return lista;
@@ -252,7 +335,7 @@ namespace MuebleriaAlpesWebBackend.Data.Repositories.Envios
                     ON eo.ESO_ESTADO_ORDEN = v.ESO_ESTADO_ORDEN
                   LEFT JOIN ALP_CANAL_VENTA cv
                     ON cv.CVE_CANAL_VENTA = v.CVE_CANAL_VENTA
-                 WHERE v.CLD_CLIENTE_DIRECCION IS NOT NULL
+                 WHERE v.ESO_ESTADO_ORDEN IN (2, 3)
                    AND NOT EXISTS (
                         SELECT 1
                           FROM ALP_ENVIO e
