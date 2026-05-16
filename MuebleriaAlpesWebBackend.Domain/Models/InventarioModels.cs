@@ -27,6 +27,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public int? TipoMuebleId { get; set; }
         public string? TipoMuebleNombre { get; set; }
         public string ImagenUrl => $"/api/ProductoImagen/producto/{ProductoId}/principal";
+        public decimal? PrecioVigente { get; set; }
+        public decimal? PrecioOferta { get; set; }
     }
 
     public class CrearProductoRequest
@@ -37,6 +39,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public string? DescripcionLarga { get; set; }
         public decimal? Peso { get; set; }
         public string EsConfigurable { get; set; } = "N";
+        public decimal? PrecioInicial { get; set; }
+        public decimal? PrecioOfertaInicial { get; set; }
     }
 
     public class ActualizarProductoRequest
@@ -45,6 +49,8 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
         public string? DescripcionCorta { get; set; }
         public decimal? Peso { get; set; }
         public int? TipoMueble { get; set; }
+        public decimal? NuevoPrecio { get; set; }
+        public decimal? NuevoPrecioOferta { get; set; }
     }
 
     // --- VARIANTE DTOs ---

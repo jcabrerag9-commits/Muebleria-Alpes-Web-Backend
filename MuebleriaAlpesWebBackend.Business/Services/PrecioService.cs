@@ -57,5 +57,10 @@ namespace MuebleriaAlpesWebBackend.Business.Services
         {
             return await _precioRepository.GetHistorialByProductoAsync(productoId);
         }
+
+        public async Task<IEnumerable<PrecioProducto>> GetPreciosVigentesMasivoAsync(int monedaId)
+        {
+            return await _precioRepository.GetPreciosVigentesMasivoAsync(monedaId);
+        }
     }
 }
