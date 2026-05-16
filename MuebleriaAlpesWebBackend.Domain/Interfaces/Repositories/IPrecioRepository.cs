@@ -11,5 +11,6 @@ namespace MuebleriaAlpesWebBackend.Domain.Interfaces.Repositories
         Task<decimal> GetPrecioVigenteAsync(int productoId, int monedaId);
         Task<decimal> GetPrecioFinalAsync(int productoId, int monedaId);
         Task<IEnumerable<PrecioProducto>> GetHistorialByProductoAsync(int productoId);
+        Task<IEnumerable<PrecioProducto>> GetPreciosVigentesMasivoAsync(int monedaId);
     }
 }

@@ -42,6 +42,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
             _logger.LogInformation("[AUDITORÍA-API] POST /api/Productos solicitado a las {Time} para: {Nombre}", timestamp, producto?.Nombre);
+            _logger.LogInformation("[AUDITORÍA-API] Payload Precios -> Base: {P1}, Oferta: {P2}", producto?.PrecioVigente, producto?.PrecioOferta);
             
             if (producto == null) return BadRequest("El producto no puede ser nulo");
 
@@ -77,6 +78,7 @@ namespace MuebleriaAlpesWebBackend.API.Controllers
 
             _logger.LogInformation("[AUDITORÍA-API] Datos vinculados (Binding): Nombre='{Nombre}', TipoMueble={TM}, Peso={Peso}, Estado='{Estado}'", 
                 producto.Nombre, producto.TipoMueble, producto.Peso, producto.Estado);
+            _logger.LogInformation("[AUDITORÍA-API] Datos Precios (Binding): Vigente={P1}, Oferta={P2}", producto.PrecioVigente, producto.PrecioOferta);
             
             if (!ModelState.IsValid)
             {

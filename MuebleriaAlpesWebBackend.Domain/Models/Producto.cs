@@ -44,6 +44,13 @@ namespace MuebleriaAlpesWebBackend.Domain.Models
 
         [JsonPropertyName("fechaRegistro")]
         public DateTime FechaRegistro { get; set; }
+
+        // Propiedades de Enriquecimiento (No mapeadas en la tabla ALP_PRODUCTO)
+        [JsonPropertyName("precioVigente")]
+        public decimal? PrecioVigente { get; set; }
+
+        [JsonPropertyName("precioOferta")]
+        public decimal? PrecioOferta { get; set; }
     }
 
     public class DimensionProducto
